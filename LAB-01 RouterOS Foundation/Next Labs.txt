@@ -1,0 +1,175 @@
+# LAB HANDOFF — LAB-01 → LAB-02
+
+## PROJECT
+
+**MikroTik MTCNA Home Lab — Small Office Network**
+
+## PROJECT PROGRESS
+
+* LAB-01 — RouterOS Foundation: ✅ PASS
+* Assessment-01: ✅ PASS — 76/100
+* LAB-02: ⏳ NEXT
+
+## ENVIRONMENT
+
+* GNS3
+* MikroTik CHR
+* Oracle VirtualBox
+* VPCS
+* WinBox
+
+## CURRENT TOPOLOGY
+
+```text
+                         Laptop
+                           │
+                     Host-Only Network
+                           │
+                        ether1
+                     Management
+                           │
+                    ┌──────┴──────┐
+                    │             │
+                    │  CHR-HQ-1   │
+                    │  MikroTik   │
+                    │             │
+                    └──────┬──────┘
+                         ether2
+                           │
+                           │ LAN
+                           │
+                      ┌────┴────┐
+                      │   PC1   │
+                      │  VPCS   │
+                      └─────────┘
+```
+
+## CURRENT CONFIGURATION
+
+### CHR-HQ-1
+
+```text
+Identity : MTCNA-SOHO-R1
+
+ether1 : Management
+IP     : 192.168.56.108/24
+
+ether2 : LAN
+IP     : 192.168.10.1/24
+```
+
+### PC1
+
+```text
+IP      : 192.168.10.10/24
+Gateway : 192.168.10.1
+```
+
+### Verified
+
+* PC1 → MikroTik ping: ✅
+* MikroTik → PC1 ping: ✅
+* Connected route `192.168.10.0/24 → ether2`: ✅
+* WinBox management access: ✅
+
+## BACKUP
+
+LAB-01 sudah di-backup menggunakan:
+
+```routeros
+/export file=LAB-01-final
+/system backup save name=LAB-01-final
+```
+
+Backup harus dipertahankan sebagai bagian dokumentasi project.
+
+## IMPORTANT LEARNING POINTS
+
+Pada Assessment-01 ditemukan beberapa konsep yang masih perlu diperkuat:
+
+* Interface ≠ IP Address
+* `/24` menunjukkan 24 bit network, bukan jumlah host
+* ARP Table ≠ Routing Table
+* Default Gateway digunakan untuk mencapai network di luar subnet lokal
+* `.1` adalah konvensi umum, bukan kewajiban
+* Connected route dibuat RouterOS berdasarkan IP/subnet pada interface
+* Troubleshooting harus dilakukan secara sistematis
+
+## NEXT LAB
+
+# LAB-02 — WAN & DHCP Client
+
+Fokus:
+
+* Menambahkan ISP Router
+* Menghubungkan WAN MikroTik ke ISP
+* DHCP Client pada MikroTik
+* Mendapatkan IP WAN secara dynamic
+* Memahami default route
+* Memahami gateway
+* Testing konektivitas WAN
+* Basic DNS verification
+
+## EXPECTED TOPOLOGY
+
+```text
+                 ISP ROUTER
+                     │
+                  WAN LINK
+                     │
+                   ether1
+                ┌────┴────┐
+                │ CHR-HQ  │
+                └────┬────┘
+                   ether2
+                     │
+                    PC1
+```
+
+Management melalui Host-Only tetap dipertahankan dan **tidak boleh mengganggu topology lab**.
+
+## MENTORING RULES
+
+Untuk LAB-02:
+
+1. Berikan seluruh lab dari awal sampai selesai.
+2. Berikan tujuan dan topology.
+3. Berikan konfigurasi yang perlu dilakukan.
+4. Jelaskan konsep penting secara singkat saat relevan.
+5. Setelah konfigurasi, lakukan validation.
+6. Sertakan troubleshooting scenario jika relevan.
+7. LAB harus diakhiri dengan backup.
+8. Buat README yang detail, rapi, dan mudah dipahami orang awam.
+9. Setelah LAB selesai dan PASS, berikan assessment.
+10. Setelah assessment selesai, buat Handoff Note untuk LAB berikutnya.
+11. Jangan terlalu panjang atau berbelit-belit.
+12. Saya yang melakukan konfigurasi; jangan menganggap konfigurasi berhasil sebelum saya mengirim hasilnya.
+
+## DOCUMENTATION STANDARD
+
+Setiap LAB harus memiliki:
+
+* Objective
+* Environment
+* Topology
+* IP Addressing
+* Configuration
+* Explanation of Concepts
+* Verification
+* Troubleshooting
+* Backup
+* Evidence/Screenshots
+* Result
+* Learning Outcome
+
+## PROJECT LINKEDIN PLAN
+
+* LinkedIn Post #1 → setelah LAB-04
+* LinkedIn Post #2 → setelah LAB-08
+* LinkedIn Post #3 → setelah Final Project
+
+## REQUEST
+
+**Mulai LAB-02 — WAN & DHCP Client.**
+
+Pertahankan gaya mentoring yang singkat, runtut, dan langsung praktik.
