@@ -1,0 +1,509 @@
+# LAB HANDOFF — LAB-02 → LAB-03
+
+## PROJECT
+
+**MikroTik MTCNA Home Lab — Small Office Network**
+
+Project mentoring: **MikroTik Junior Journey To Master MikroTik**
+
+---
+
+# PROJECT PROGRESS
+
+```text
+LAB-01 — RouterOS Foundation       ✅ PASS
+Assessment-01                    ✅ PASS — 76/100
+
+LAB-02 — WAN & DHCP Client        ✅ PASS
+Assessment-02                    ✅ PASS — 72/100
+
+LAB-03                           ⏳ NEXT
+```
+
+**Jangan mengulang LAB-01, LAB-02, atau Assessment-01/02.**
+
+---
+
+# ENVIRONMENT
+
+* GNS3
+* MikroTik CHR
+* Oracle VirtualBox
+* VPCS
+* WinBox
+* RouterOS
+
+---
+
+# LAB-01 SUMMARY
+
+## CHR-HQ-1
+
+```text
+ether1 → Management
+IP: 192.168.56.108/24
+
+ether2 → LAN
+IP: 192.168.10.1/24
+```
+
+## PC1
+
+```text
+IP      : 192.168.10.10/24
+Gateway : 192.168.10.1
+```
+
+## LAB-01 Verification
+
+```text
+PC1 → 192.168.10.1       ✅
+MikroTik → PC1           ✅
+Connected route LAN      ✅
+WinBox management        ✅
+```
+
+## LAB-01 Backup
+
+```text
+LAB-01-final
+```
+
+Backup dibuat menggunakan:
+
+```routeros
+/export file=LAB-01-final
+/system backup save name=LAB-01-final
+```
+
+---
+
+# ASSESSMENT-01
+
+```text
+Score : 76/100
+Status: PASS
+```
+
+Konsep yang perlu terus diperkuat:
+
+* Interface ≠ IP Address
+* `/24` adalah prefix length, bukan jumlah host
+* ARP Table ≠ Routing Table
+* Default Gateway
+* Connected Route
+* Systematic Troubleshooting
+
+---
+
+# LAB-02 — WAN & DHCP CLIENT
+
+## Objective
+
+Memahami:
+
+* ISP Router
+* WAN link
+* DHCP Server
+* DHCP Client
+* Dynamic WAN IP
+* Gateway
+* Default Route
+* DNS
+* Basic WAN troubleshooting
+
+---
+
+# FINAL TOPOLOGY
+
+```text
+                 CHR-ISP-1
+                    │
+                 ether2
+                    │
+                    │ WAN
+                    │
+                 ether3
+               CHR-HQ-1
+              ┌─────┴─────┐
+           ether1        ether2
+        Management        LAN
+                            │
+                           PC1
+                         ether0
+```
+
+**Catatan penting:**
+
+Nomor port/interface di GNS3 **tidak boleh langsung diasumsikan sama** dengan nomor `etherX` di RouterOS.
+
+RouterOS/WinBox digunakan sebagai **source of truth**.
+
+Mapping harus diverifikasi dengan:
+
+```routeros
+/interface print
+/ip address print
+```
+
+---
+
+# VIRTUALBOX / MANAGEMENT
+
+## CHR-ISP-1
+
+```text
+Adapter 1 → Host-Only
+Adapter 2 → Generic Driver
+Adapter 3 → Disabled
+Adapter 4 → Disabled
+```
+
+Fungsi RouterOS:
+
+```text
+ether1 → Management
+ether2 → WAN
+```
+
+## CHR-HQ-1
+
+Final RouterOS mapping:
+
+```text
+ether1 → Management
+ether2 → LAN
+ether3 → WAN
+```
+
+---
+
+# FINAL IP ADDRESSING
+
+## CHR-ISP-1
+
+```text
+ether1 → Management
+192.168.56.109/24
+
+ether2 → WAN toward CHR-HQ-1
+192.168.100.1/24
+```
+
+## CHR-HQ-1
+
+```text
+ether1 → Management
+192.168.56.108/24
+
+ether2 → LAN
+192.168.10.1/24
+
+ether3 → WAN
+192.168.100.254/24
+Dynamic DHCP
+```
+
+## PC1
+
+```text
+IP      : 192.168.10.10/24
+Gateway : 192.168.10.1
+```
+
+---
+
+# ISP DHCP SERVER
+
+CHR-ISP-1:
+
+```text
+DHCP Server : ISP-DHCP
+Interface   : ether2
+Pool        : ISP-POOL
+```
+
+Pool:
+
+```text
+192.168.100.10-192.168.100.254
+```
+
+Network:
+
+```text
+192.168.100.0/24
+Gateway: 192.168.100.1
+DNS: 192.168.100.1
+```
+
+---
+
+# HQ DHCP CLIENT
+
+CHR-HQ-1:
+
+```text
+interface=ether3
+status=bound
+```
+
+Received:
+
+```text
+IP      : 192.168.100.254/24
+Gateway : 192.168.100.1
+DNS     : 192.168.100.1
+```
+
+---
+
+# ROUTING
+
+Connected routes:
+
+```text
+192.168.10.0/24  → ether2
+192.168.56.0/24  → ether1
+192.168.100.0/24 → ether3
+```
+
+Default route:
+
+```text
+0.0.0.0/0 → 192.168.100.1
+```
+
+Important understanding:
+
+* `192.168.10.0/24` = LAN network
+* `192.168.100.0/24` = WAN network
+* `0.0.0.0/0` = default route
+* Default route digunakan jika tidak ada route yang lebih spesifik.
+* Jangan menyebut `0.0.0.0/0` sebagai "route universal"; istilah teknisnya adalah **default route**.
+
+---
+
+# DNS
+
+DHCP Client menerima:
+
+```text
+dynamic-servers: 192.168.100.1
+```
+
+DNS lokal digunakan untuk simulasi:
+
+```text
+lab02.test → 8.8.8.1
+```
+
+Hasil:
+
+```text
+PASS
+0% packet loss
+```
+
+`google.com` menghasilkan:
+
+```text
+resolve failed
+```
+
+Hal tersebut **bukan failure LAB-02**, karena ISP Router belum memiliki upstream Internet nyata.
+
+`8.8.8.1` digunakan hanya sebagai simulated external destination untuk testing routing/DNS.
+
+---
+
+# VERIFICATION RESULTS
+
+```text
+PC1 → 192.168.10.1
+PASS
+
+HQ → 192.168.100.1
+PASS
+0% packet loss
+
+HQ → 8.8.8.1
+PASS
+
+DNS:
+lab02.test → 8.8.8.1
+PASS
+```
+
+---
+
+# LAB-02 BACKUP
+
+Backup sudah selesai.
+
+```text
+LAB-01-final
+LAB-02-final
+LAB-02-ISP-final
+```
+
+LAB-02 memiliki backup untuk:
+
+* CHR-HQ-1
+* CHR-ISP-1
+
+Evidence/screenshot LAB-02 juga sudah selesai dibuat.
+
+---
+
+# LAB-02 LEARNING OUTCOME
+
+Sudah memahami dasar:
+
+* DHCP Server
+* DHCP Client
+* Dynamic IP
+* Gateway
+* Connected Route
+* Default Route
+* DNS via DHCP
+* Interface vs IP Address
+* Management vs LAN vs WAN
+* Basic WAN troubleshooting
+* GNS3 interface mapping vs RouterOS interface mapping
+
+---
+
+# ASSESSMENT-02
+
+```text
+Score : 72/100
+Status: PASS
+```
+
+Assessment menguji:
+
+* Interface vs IP
+* DHCP Server vs DHCP Client
+* Dynamic IP
+* Gateway
+* Connected Route
+* Default Route
+* DNS
+* Routing Table
+* Basic Troubleshooting
+* GNS3 ↔ RouterOS interface mapping
+
+## Hasil review
+
+Konsep yang sudah cukup baik:
+
+* DHCP Server vs Client
+* Dynamic IP
+* Gateway
+* Connected Route
+* Default Route dasar
+* DNS dasar
+* Membaca routing table
+
+Konsep yang masih perlu dilatih:
+
+* Systematic troubleshooting
+* DNS resolution vs IP connectivity
+* Membaca error secara mendalam
+* Menjelaskan konsep dengan istilah teknis yang tepat
+* Routing logic / longest-prefix match
+
+Namun Assessment-02 sudah **PASS — 72/100**.
+
+---
+
+# TROUBLESHOOTING METHOD YANG HARUS TERUS DILATIH
+
+Gunakan pola:
+
+```text
+LINK
+ ↓
+INTERFACE
+ ↓
+IP
+ ↓
+DHCP
+ ↓
+ROUTE
+ ↓
+GATEWAY
+ ↓
+DESTINATION
+ ↓
+DNS
+```
+
+Jangan langsung menebak masalah.
+
+Contoh:
+
+```text
+PC1 → Gateway berhasil
+        ↓
+HQ → WAN Gateway gagal
+        ↓
+cek ether WAN
+        ↓
+cek IP WAN
+        ↓
+cek DHCP Client
+        ↓
+cek routing
+        ↓
+ping gateway
+```
+
+---
+
+# PROJECT STATUS SEKARANG
+
+```text
+LAB-01              ✅ PASS
+Assessment-01       ✅ 76/100 PASS
+
+LAB-02              ✅ PASS
+Assessment-02       ✅ 72/100 PASS
+
+LAB-03              ⏳ NEXT
+```
+
+---
+
+# NEXT STEP
+
+**Mulai LAB-03.**
+
+Sebelum memulai, mentor harus:
+
+1. Menentukan objective LAB-03.
+2. Menjelaskan topology.
+3. Menentukan IP addressing.
+4. Memberikan konfigurasi secara bertahap.
+5. Menjelaskan konsep saat relevan.
+6. Melakukan validation setelah setiap tahap.
+7. Tidak menganggap konfigurasi berhasil sebelum user mengirim evidence.
+8. Menyediakan troubleshooting scenario.
+9. Mengakhiri LAB dengan backup.
+10. Membuat README.
+11. Membuat Result dan Learning Outcome.
+12. Setelah LAB selesai, buat Assessment berikutnya.
+13. Setelah assessment PASS, buat Handoff Note berikutnya.
+
+**User yang melakukan konfigurasi. Mentor tidak boleh menganggap konfigurasi berhasil tanpa output/screenshot dari user.**
+
+---
+
+# IMPORTANT
+
+Jangan langsung mengulang materi LAB-01/LAB-02.
+
+Percakapan baru harus dimulai dari:
+
+**LAB-03 — sesuai roadmap project MikroTik MTCNA Home Lab.**
