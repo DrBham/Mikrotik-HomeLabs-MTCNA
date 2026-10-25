@@ -34,7 +34,7 @@ Saya menggunakan pendekatan **learn → configure → verify → troubleshoot �
 
 *LAB-03 memverifikasi **NAT dan konektivitas menuju ISP simulasi**, bukan akses Internet publik. ISP pada topologi ini tidak memiliki upstream Internet sungguhan.*
 
-**Project continuity:** LAB-07 (Network Troubleshooting) dihentikan sebelum selesai; LAB-08 (Backup, Restore & Final Documentation) dibatalkan. Keduanya tidak dinyatakan sebagai completed labs. Pembelajaran dilanjutkan ke Final Project.
+**Next milestone:** Final Project — Small Office Network Integration, sebagai implementasi terintegrasi dari materi yang telah dipelajari.
 
 ## Network Evolution
 
@@ -83,15 +83,35 @@ Pada LAB-06, kedua LAN dihubungkan menggunakan static route dua arah, disertai p
 
 ## How to Read This Repository
 
-Setiap folder lab berisi `README.md` sebagai dokumentasi utama. Bergantung pada file yang benar-benar tersedia, folder dapat pula memiliki:
+Setiap folder LAB-01 hingga LAB-06 memiliki `README.md` yang menjelaskan tujuan, topologi, konfigurasi, hasil pengujian, troubleshooting, dan pembelajaran dari lab tersebut.
 
-- `screenshots/` atau `evidence/` — screenshot topologi, konfigurasi, dan hasil pengujian.
-- `configs/` — export konfigurasi teks yang sudah diperiksa dan dibersihkan dari informasi sensitif.
-- Catatan troubleshooting, assessment, atau referensi pendukung.
+File pendukung **diletakkan langsung di dalam folder masing-masing lab**, tanpa pemisahan folder `screenshots/`, `evidence/`, atau `configs/`. Isinya dapat berupa:
 
-Mulai dari LAB-01 bila ingin mengikuti perkembangan konsep secara bertahap. Untuk melihat implementasi routing dua lokasi, langsung baca LAB-06.
+- **Screenshot** topologi GNS3, IP addressing, routing, DHCP, firewall, NAT, dan hasil ping.
+- **Export RouterOS (`.rsc`)**, jika tersedia, untuk membaca kembali konfigurasi.
+- **Backup RouterOS (`.backup`)**, jika tersedia, untuk kebutuhan pemulihan pada lingkungan yang kompatibel.
+- **Handoff note** atau catatan pendukung yang merekam kelanjutan pekerjaan.
 
-> **Evidence policy:** Hanya screenshot dan file konfigurasi yang benar-benar tersedia yang dapat dianggap sebagai bukti. Jangan menganggap contoh perintah di README sebagai command yang pasti dijalankan saat praktik asli.
+Contoh susunan file dalam salah satu folder lab:
+
+```text
+LAB-04 Firewall Fundamental/
+├── README.md
+├── Topology.png
+├── IP Address.png
+├── Routing Table.png
+├── Firewall Filter.png
+├── Firewall Filter Stats.png
+├── Firewall NAT Stats.png
+├── PC1 Connectivity Validation.png
+├── LAB-04.rsc
+├── LAB-04.backup
+└── Handoff.md
+```
+
+> Contoh di atas menggambarkan **cara penyimpanan file**, bukan daftar file yang wajib ada pada setiap lab. Nama dan jumlah berkas dapat berbeda. Mulai dari LAB-01 untuk mengikuti pembelajaran berurutan, atau langsung buka LAB-06 untuk melihat implementasi routing HQ–BRANCH.
+
+**Catatan verifikasi:** Screenshot dan konfigurasi hanya dianggap sebagai evidence jika memang tersedia. Command contoh di README tidak selalu berarti command tersebut dijalankan persis sama dalam praktik asli.
 
 ## Important Technical Boundaries
 
@@ -117,6 +137,6 @@ Repository ini dibuat sebagai:
 
 ---
 
-**Current status:** LAB-01–LAB-06 completed technically · LAB-07 discontinued · LAB-08 cancelled · Final Project next.
+**Current status:** LAB-01–LAB-06 documented · Final Project — Small Office Network Integration is the next milestone.
 
 *Created as a personal networking learning journey. Feedback and technical corrections are welcome.*
