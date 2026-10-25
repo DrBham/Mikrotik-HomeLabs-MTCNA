@@ -1,0 +1,170 @@
+
+---
+
+# 🔄 HANDOFF — LAB-05 → LAB-06
+
+Ini saya buat **satu blok** supaya kamu bisa langsung copy-paste ke chat baru.
+
+```text
+HANDOFF — MIKROTIK JUNIOR JOURNEY TO MASTER MIKROTIK
+
+PROJECT:
+MikroTik Junior Journey To Master MikroTik
+
+PROGRESS:
+LAB-01 — RouterOS Foundation              ✅ PASS
+LAB-02 — WAN & DHCP Client                ✅ PASS
+LAB-03 — NAT & Internet Access            ✅ PASS
+LAB-04 — Firewall Fundamentals            ✅ PASS
+LAB-05 — DHCP Server & LAN Management     ✅ PASS
+NEXT:
+LAB-06
+
+ASSESSMENT:
+Assessment-01: 76/100
+Assessment-02: 72/100
+Assessment-03: 60/100
+Assessment-04: 79/100
+Assessment-05 initial: 64/100
+Assessment-05 remedial: PASS
+Final LAB-05: PASS
+
+MENTORING MODE:
+Gunakan mode "KILLCRITIC".
+
+Setiap kali saya menjawab pertanyaan:
+1. Kritik jawaban saya secara tegas.
+2. Tunjukkan bagian yang benar dan salah.
+3. Jelaskan mengapa jawaban saya salah/kurang tepat.
+4. Jangan hanya memberikan jawaban benar.
+5. Ajarkan kembali teori sampai saya benar-benar memahami konsepnya.
+6. Setelah menjelaskan, uji saya kembali jika konsep saya belum solid.
+7. Bedakan antara jawaban yang benar secara teori dan jawaban yang hanya terdengar benar.
+8. Prioritaskan pemahaman "WHY" dan packet flow, bukan hafalan command.
+9. Jika saya membuat asumsi tanpa evidence, koreksi saya.
+10. Jangan terlalu cepat mengatakan PASS.
+
+PRINSIP TROUBLESHOOTING:
+Gunakan evidence-based troubleshooting:
+
+Link
+→ Interface
+→ IP Address
+→ ARP
+→ Routing
+→ Firewall
+→ NAT
+→ Connection Tracking
+→ Upstream
+
+Jangan langsung menyimpulkan penyebab sebelum ada evidence.
+
+FINAL LAB-05 TOPOLOGY:
+
+CHR-ISP-1
+- ether1: Management — 192.168.56.109/24
+- ether2: WAN/LAN transit — 192.168.100.1/24
+- DHCP Server ISP-DHCP pada ether2
+- Pool ISP-POOL: 192.168.100.10-192.168.100.254
+- ISP tidak memiliki default route/upstream Internet
+
+CHR-HQ-1
+- ether1: Management — 192.168.56.108/24
+- ether2: LAN — 192.168.10.1/24
+- ether3: WAN — DHCP Client
+- Saat DHCP WAN bound, biasanya mendapatkan 192.168.100.254/24
+- Default route menuju 192.168.100.1 bersifat DYNAMIC dari DHCP Client
+
+HQ DHCP:
+- Pool: LAN-POOL
+- Range: 192.168.10.10-192.168.10.100
+- DHCP Server: DHCP-LAN
+- Interface: ether2
+- Lease Time: 30m
+- Network: 192.168.10.0/24
+- Gateway: 192.168.10.1
+- DNS: 192.168.10.1
+
+PC1:
+- DHCP Client
+- Final observed IP: 192.168.10.100/24
+- Gateway: 192.168.10.1
+- DNS: 192.168.10.1
+- DHCP Server: 192.168.10.1
+
+HQ NAT:
+chain=srcnat
+action=masquerade
+out-interface=ether3
+
+LAB-04 FIREWALL BASELINE:
+INPUT:
+- invalid → drop
+- established,related → accept
+- new from 192.168.56.0/24 → accept
+- ICMP from 192.168.10.0/24 → accept
+- new → drop
+
+FORWARD:
+- invalid → drop
+- established,related → accept
+- new from 192.168.10.0/24 out ether3 → accept
+- new → drop
+
+IMPORTANT LAB-05 TROUBLESHOOTING LESSONS:
+
+1. DHCP Pool pernah salah:
+102.168.10.10-102.168.10.100
+→ dikoreksi menjadi:
+192.168.10.10-192.168.10.100
+
+2. DHCP Network gateway pernah salah:
+192.168.0.101
+→ dikoreksi menjadi:
+192.168.10.1
+
+3. Pernah dilakukan percobaan temporary firewall rule untuk DHCP, tetapi rule tersebut akhirnya dihapus dan bukan merupakan solusi final.
+Jangan menganggap DHCP gagal karena firewall hanya berdasarkan kenaikan counter.
+
+4. DHCP akhirnya berhasil setelah restart GNS3.
+Anggap restart sebagai recovery terhadap state/environment, bukan sebagai bukti root cause.
+
+5. HQ ether3 pernah DHCP "searching".
+Evidence menunjukkan ISP ether2 saat itu tidak RUNNING.
+Setelah link/state kembali normal, DHCP WAN bound dan dynamic default route muncul kembali.
+
+6. Dynamic default route HQ berasal dari DHCP Client.
+Jika DHCP WAN tidak bound:
+- gateway tidak diperoleh
+- dynamic default route dapat hilang
+
+7. Ping 8.8.8.8 gagal bukan karena DHCP LAN.
+NAT HQ terbukti aktif karena counter NAT meningkat.
+ISP tidak mempunyai default route/upstream sehingga tidak dapat meneruskan packet ke Internet.
+
+FINAL VALIDATION:
+DHCP Pool             ✅
+DHCP Server           ✅
+DHCP Network          ✅
+DORA                  ✅
+Lease bound           ✅
+Gateway               ✅
+DNS                   ✅
+PC1 → HQ              ✅
+PC1 → ISP             ✅
+NAT                   ✅
+PC1 → 8.8.8.8        ⚠️ FAIL — ISP tidak memiliki upstream/default route
+
+DOCUMENTATION:
+LAB-05 README telah selesai.
+Screenshot evidence telah diambil.
+LAB-05.backup telah dibuat dan diverifikasi.
+
+NEXT STEP:
+Mulai LAB-06 tanpa mengulang LAB-01 sampai LAB-05.
+Sebelum konfigurasi, jelaskan objective LAB-06, teori yang akan dipelajari, topology, dan alasan setiap konfigurasi.
+Kemudian gunakan metode:
+THEORY → CONFIGURATION → VALIDATION → TROUBLESHOOTING → ASSESSMENT.
+
+Jangan berikan command terlalu banyak sekaligus.
+Saya ingin mengerjakan konfigurasi sendiri dan menjelaskan WHY dari setiap langkah.

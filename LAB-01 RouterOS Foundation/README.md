@@ -426,8 +426,22 @@ Saya berhasil membangun jaringan lokal antara MikroTik CHR dan VPCS, menetapkan 
 
 **Batas keberhasilan:** Hasil ini membuktikan komunikasi PC1 ↔ MikroTik pada subnet LAN. DHCP, WAN, NAT, firewall khusus, dan koneksi Internet **belum menjadi hasil LAB-01**.
 
-**Next: LAB-02 — WAN dan DHCP Client.** Fokus berikutnya adalah mempelajari koneksi ke perangkat upstream dan bagaimana alamat/interface WAN dikonfigurasi.
+**Kelanjutan historis: LAB-02 — WAN & DHCP Client.** Pada tahap akhir pembelajaran enam lab, project diteruskan ke Final Project setelah LAB07 dihentikan dan LAB08 dibatalkan.
 
 ---
 
 *Dokumentasi ini adalah bagian dari perjalanan belajar MikroTik secara bertahap: dari memahami konsep dasar, melakukan konfigurasi, memverifikasi hasil, hingga melatih troubleshooting.*
+
+---
+
+## Catatan Audit dan Kesinambungan (Oktober 2026)
+
+> **Catatan kesinambungan project (25 Oktober 2026):** Roadmap yang benar-benar dijalankan adalah LAB01 RouterOS Foundation, LAB02 WAN/DHCP Client, LAB03 NAT, LAB04 Firewall, LAB05 DHCP Server LAN, dan LAB06 Static Routing HQ–BRANCH. LAB07 Network Troubleshooting **dihentikan sebelum selesai** dan LAB08 Backup/Restore **dibatalkan** atas keputusan pemilik project. Tahap berikutnya adalah **Final Project — Small Office Network Integration**. Perubahan ini tidak mengubah hasil historis lab ini.
+
+### Kaitan dengan tahap selanjutnya
+
+LAB01 menggunakan PC1 **IP statis `192.168.10.10/24`**. Pada LAB05, layanan DHCP LAN HQ mulai digunakan dan PC1 tercatat menerima `192.168.10.100/24`. Kedua IP adalah hasil dari **tahap yang berbeda**, bukan ketidakkonsistenan konfigurasi pada satu waktu.
+
+### Batas validasi backup
+
+Perintah export dan backup dicatat sebagai langkah dokumentasi. README ini tidak menyertakan output `/file print` yang memastikan masing-masing file benar-benar tersedia saat audit; verifikasi file perlu dilakukan bila artefak akan dipakai untuk recovery.

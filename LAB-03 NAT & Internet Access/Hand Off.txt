@@ -1,0 +1,546 @@
+# LAB HANDOFF — LAB-03 → LAB-04
+
+## PROJECT
+
+**MikroTik MTCNA Home Lab — Small Office Network**
+
+Project mentoring:
+
+**MikroTik Junior Journey To Master MikroTik**
+
+---
+
+# PROJECT PROGRESS
+
+```text
+LAB-01 — RouterOS Foundation       ✅ PASS
+Assessment-01                    ✅ PASS — 76/100
+
+LAB-02 — WAN & DHCP Client        ✅ PASS
+Assessment-02                    ✅ PASS — 72/100
+
+LAB-03 — NAT & Internet Access    ✅ PASS
+Assessment-03                    ✅ PASS — 60/100
+
+LAB-04 — Firewall Fundamentals    ⏳ NEXT
+```
+
+**Jangan mengulang LAB-01, LAB-02, atau LAB-03 dari awal.**
+
+---
+
+# LAB-03 FINAL OBJECTIVE
+
+LAB-03 bertujuan memahami:
+
+* NAT
+* Source NAT
+* Masquerade
+* Out-interface
+* Private IP
+* WAN IP
+* Connection Tracking
+* Original traffic dan reply traffic
+* NAT counter
+* Routing vs NAT
+* Basic Layer-2 troubleshooting
+
+---
+
+# FINAL TOPOLOGY
+
+```text
+                 CHR-ISP-1
+                    │
+                 ether2
+                    │
+                    │ WAN
+                    │
+                 ether3
+               CHR-HQ-1
+              ┌─────┴─────┐
+           ether1        ether2
+        Management        LAN
+                            │
+                           PC1
+                         ether0
+```
+
+---
+
+# FINAL INTERFACE MAPPING
+
+## CHR-ISP-1
+
+```text
+ether1 → Management
+ether2 → WAN
+```
+
+## CHR-HQ-1
+
+```text
+ether1 → Management
+ether2 → LAN
+ether3 → WAN
+```
+
+## PC1
+
+```text
+ether0 → CHR-HQ-1 ether2
+```
+
+**Catatan penting:**
+
+Nomor port GNS3 tidak boleh langsung diasumsikan sama dengan nomor `etherX` RouterOS.
+
+RouterOS/WinBox digunakan sebagai **source of truth**.
+
+---
+
+# FINAL IP ADDRESSING
+
+## CHR-ISP-1
+
+```text
+ether1 → 192.168.56.109/24
+ether2 → 192.168.100.1/24
+```
+
+## CHR-HQ-1
+
+```text
+ether1 → 192.168.56.108/24
+ether2 → 192.168.10.1/24
+ether3 → 192.168.100.254/24
+```
+
+`ether3` memperoleh address melalui DHCP Client.
+
+## PC1
+
+```text
+IP      : 192.168.10.10/24
+Gateway : 192.168.10.1
+```
+
+**Catatan VPCS:**
+
+Konfigurasi IP PC1 dapat kembali ke `0.0.0.0/0` setelah restart node/GNS3. Jika terjadi, set kembali:
+
+```text
+ip 192.168.10.10/24 192.168.10.1
+```
+
+---
+
+# FINAL ROUTING — CHR-HQ-1
+
+Connected routes:
+
+```text
+192.168.10.0/24  → ether2
+192.168.56.0/24  → ether1
+192.168.100.0/24 → ether3
+```
+
+Default route:
+
+```text
+0.0.0.0/0 → 192.168.100.1
+```
+
+Tidak terdapat static route:
+
+```text
+8.8.8.1
+```
+
+Static route tersebut memang telah dihapus pada LAB-02 dan **tidak boleh dikembalikan hanya untuk testing**.
+
+---
+
+# FINAL NAT CONFIGURATION
+
+CHR-HQ-1 memiliki satu rule:
+
+```text
+chain=srcnat
+action=masquerade
+out-interface=ether3
+```
+
+Konsep:
+
+```text
+PC1
+192.168.10.10
+      │
+      ▼
+CHR-HQ-1
+      │
+      │ masquerade
+      ▼
+192.168.100.254
+      │
+      ▼
+CHR-ISP-1
+192.168.100.1
+```
+
+Penting:
+
+`masquerade` melakukan source address translation.
+
+Jangan menyebut hasil NAT sebagai "selalu public IP".
+
+Pada LAB-03:
+
+```text
+192.168.10.10 → 192.168.100.254
+```
+
+Keduanya merupakan private address.
+
+---
+
+# VERIFIED LAB-03 RESULTS
+
+## LAN
+
+```text
+PC1 → 192.168.10.1
+PASS
+```
+
+## WAN
+
+```text
+PC1 → 192.168.100.1
+PASS
+```
+
+## NAT
+
+NAT counter terbukti bertambah:
+
+```text
+5 packets → 10 packets
+```
+
+Hal tersebut membuktikan traffic PC1 benar-benar diproses oleh `srcnat masquerade`.
+
+## Connection Tracking
+
+Connection tracking menunjukkan traffic seperti:
+
+```text
+icmp
+192.168.10.10 → 192.168.100.1
+```
+
+dengan flag terkait source NAT dan terdapat original/reply packet.
+
+---
+
+# EXTERNAL DESTINATION
+
+Test:
+
+```text
+PC1 → 8.8.8.1
+```
+
+menghasilkan:
+
+```text
+Destination network unreachable
+```
+
+Hal ini **EXPECTED**.
+
+Alasannya:
+
+* Static route `8.8.8.1` sudah dihapus pada LAB-02.
+* Route tersebut tidak dikembalikan pada LAB-03.
+* NAT tetap terbukti bekerja melalui NAT counter dan connection tracking.
+
+Jangan menjadikan kegagalan `8.8.8.1` sebagai bukti NAT gagal.
+
+---
+
+# TROUBLESHOOTING EXPERIENCE
+
+LAB-03 mengalami masalah:
+
+```text
+PC1 → 192.168.10.1
+Host unreachable
+```
+
+Investigation:
+
+```text
+PC1 IP sempat 0.0.0.0/0
+ARP PC1 kosong
+ARP MikroTik tidak menunjukkan 192.168.10.10
+ether2 link-ok
+Topology GNS3 benar
+```
+
+Setelah restart GNS3:
+
+```text
+LAN connectivity kembali PASS
+```
+
+Lesson:
+
+```text
+LINK
+ ↓
+INTERFACE
+ ↓
+IP
+ ↓
+ARP
+ ↓
+ROUTE
+ ↓
+NAT
+```
+
+Troubleshooting harus sistematis.
+
+---
+
+# ASSESSMENT-03
+
+```text
+Score : 60/100
+Status: PASS
+```
+
+Assessment-03 menguji:
+
+* NAT
+* Masquerade
+* Source vs Destination
+* Routing vs NAT
+* Connected Route
+* Default Route
+* NAT Counter
+* Connection Tracking
+* Troubleshooting
+* Packet Flow
+
+---
+
+# ASSESSMENT-03 WEAKNESSES
+
+Konsep yang masih perlu diperkuat:
+
+## 1. Source vs Destination
+
+Ingat:
+
+```text
+SOURCE
+= siapa yang mengirim
+
+DESTINATION
+= siapa yang dituju
+```
+
+Contoh:
+
+```text
+Source      : 192.168.10.10
+Destination : 192.168.100.1
+```
+
+Setelah masquerade:
+
+```text
+Source      : 192.168.100.254
+Destination : 192.168.100.1
+```
+
+Destination tidak berubah karena `srcnat`.
+
+---
+
+## 2. Routing vs NAT
+
+Gunakan aturan:
+
+```text
+Routing
+→ menentukan ke mana packet pergi
+
+NAT
+→ melakukan address translation
+
+Connection Tracking
+→ melacak state dan hubungan traffic
+```
+
+Jangan mencampurkan ketiga fungsi tersebut.
+
+---
+
+## 3. NAT Tidak Selalu Menghasilkan Public IP
+
+Jangan mengatakan:
+
+```text
+NAT = private → public
+```
+
+Lebih tepat:
+
+```text
+NAT = address translation
+```
+
+Hasil translation dapat berupa address private maupun public, tergantung desain jaringan.
+
+---
+
+## 4. NAT Counter
+
+Jika:
+
+```text
+PACKETS = 0
+```
+
+tidak otomatis berarti NAT gagal.
+
+Pertama tanyakan:
+
+> Apakah traffic tersebut memang seharusnya match rule NAT?
+
+Contoh:
+
+```text
+PC1 → 192.168.10.1
+```
+
+tidak keluar melalui `ether3`, sehingga rule:
+
+```text
+out-interface=ether3
+```
+
+tidak match.
+
+---
+
+# CURRENT KNOWLEDGE BASELINE
+
+User sudah memahami secara praktik:
+
+```text
+DHCP Server
+DHCP Client
+Dynamic IP
+Gateway
+Connected Route
+Default Route
+DNS dasar
+WAN
+NAT
+Masquerade
+NAT Counter
+Connection Tracking dasar
+Basic troubleshooting
+GNS3/VPCS state
+```
+
+Namun istilah teknis berikut harus terus diperkuat:
+
+```text
+Source vs Destination
+Routing vs NAT
+NAT vs Public IP
+Connection Tracking
+Packet Flow
+```
+
+---
+
+# LAB-04 — NEXT OBJECTIVE
+
+LAB-04 berikutnya adalah:
+
+**Firewall Fundamentals**
+
+Fokus:
+
+```text
+Packet Flow
+     ↓
+Firewall
+     ↓
+input
+forward
+output
+     ↓
+Connection State
+     ↓
+Basic Firewall Filtering
+     ↓
+Troubleshooting
+```
+
+LAB-04 harus dibangun **di atas konfigurasi LAB-03 yang sudah ada**.
+
+Jangan menghapus NAT LAB-03 tanpa alasan.
+
+---
+
+# RULES FOR LAB-04
+
+Mentor pada chat berikutnya harus:
+
+1. Tidak mengulang LAB-01.
+2. Tidak mengulang LAB-02.
+3. Tidak mengulang seluruh LAB-03.
+4. Menggunakan CHR-HQ-1 final LAB-03 sebagai baseline.
+5. Menjelaskan objective LAB-04 terlebih dahulu.
+6. Menjelaskan topology sebelum konfigurasi.
+7. Menjelaskan konsep firewall yang relevan.
+8. Memberikan konfigurasi secara bertahap.
+9. User melakukan konfigurasi sendiri.
+10. Mentor tidak menganggap konfigurasi berhasil tanpa evidence.
+11. Melakukan validation setelah setiap tahap.
+12. Memberikan troubleshooting scenario.
+13. Menyelesaikan final verification.
+14. Membuat backup setelah LAB selesai.
+15. Membuat README.
+16. Membuat Result dan Learning Outcome.
+17. Membuat Assessment-04 setelah LAB selesai.
+18. Setelah Assessment-04 PASS, membuat handoff berikutnya.
+
+---
+
+# PROJECT STATUS
+
+```text
+LAB-01              ✅ PASS
+Assessment-01       ✅ 76/100
+
+LAB-02              ✅ PASS
+Assessment-02       ✅ 72/100
+
+LAB-03              ✅ PASS
+Assessment-03       ✅ 60/100
+
+LAB-04              ⏳ NEXT
+```
+
+**NEXT ACTION:**
+
+Mulai **LAB-04 — Firewall Fundamentals** dari objective dan topology, menggunakan konfigurasi LAB-03 sebagai baseline.

@@ -385,10 +385,22 @@ Target utama telah tercapai:
 
 ## 12. Materi Lanjutan
 
-LAB berikutnya akan ditentukan setelah **Assessment-02**, sesuai dokumentasi awal. Area pembelajaran berikutnya dapat memperluas simulasi menuju routing, NAT, firewall, dan koneksi Internet sesuai tahapan lab yang dijalankan.
+Pada kelanjutan project yang benar-benar dijalankan, **LAB03 membahas NAT dan konektivitas WAN simulasi**, disusul LAB04 firewall, LAB05 DHCP Server LAN, dan LAB06 static routing HQ–BRANCH. Penentuan materi ini mengikuti rekam praktik, bukan rencana yang pernah berubah.
 
 ---
 
 **Project:** MikroTik Junior Journey to Master MikroTik  
 **Lab:** LAB-02 — WAN & DHCP Client  
 **Result:** ✅ PASS
+
+---
+
+## Catatan Audit dan Kesinambungan (Oktober 2026)
+
+> **Catatan kesinambungan project (25 Oktober 2026):** Roadmap yang benar-benar dijalankan adalah LAB01 RouterOS Foundation, LAB02 WAN/DHCP Client, LAB03 NAT, LAB04 Firewall, LAB05 DHCP Server LAN, dan LAB06 Static Routing HQ–BRANCH. LAB07 Network Troubleshooting **dihentikan sebelum selesai** dan LAB08 Backup/Restore **dibatalkan** atas keputusan pemilik project. Tahap berikutnya adalah **Final Project — Small Office Network Integration**. Perubahan ini tidak mengubah hasil historis lab ini.
+
+### Kaitan dengan tahap selanjutnya
+
+Alamat WAN HQ `192.168.100.254/24` adalah **hasil lease yang teramati**, bukan alamat statis yang dijamin selamanya. Pada LAB06, static route BRANCH menunjuk ke alamat transit HQ tersebut; perubahan lease DHCP HQ dapat membuat next-hop statis BRANCH perlu diperiksa kembali.
+
+Simulasi `8.8.8.1` pada LAB02 tidak membuktikan Internet sungguhan. Pada LAB03 pengujian ke tujuan tersebut kemudian gagal setelah route simulasi tidak lagi tersedia. Hasil kedua lab berlaku untuk **konfigurasi masing-masing tahap**, bukan dua klaim yang saling bertentangan.

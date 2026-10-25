@@ -1,0 +1,657 @@
+# HANDOFF NOTE — LAB-04 → LAB-05
+
+## PROJECT
+
+**MikroTik MTCNA Home Lab — Small Office Network**
+
+Project mentoring:
+
+**MikroTik Junior Journey To Master MikroTik**
+
+---
+
+# PROJECT PROGRESS
+
+```text
+LAB-01 — RouterOS Foundation       ✅ PASS
+Assessment-01                    ✅ PASS — 76/100
+
+LAB-02 — WAN & DHCP Client        ✅ PASS
+Assessment-02                    ✅ PASS — 72/100
+
+LAB-03 — NAT & Internet Access    ✅ PASS
+Assessment-03                    ✅ PASS — 60/100
+
+LAB-04 — Firewall Fundamentals    ✅ PASS
+Assessment-04                    ✅ PASS — 79/100
+
+LAB-05                           ⏳ NEXT
+```
+
+**Jangan mengulang LAB-01 sampai LAB-04 dari awal.**
+
+---
+
+# LAB-04 FINAL OBJECTIVE
+
+LAB-04 bertujuan memahami:
+
+* Firewall fundamentals
+* Packet flow
+* `input`
+* `forward`
+* `output`
+* `accept`
+* `drop`
+* `log`
+* Connection Tracking
+* `new`
+* `established`
+* `related`
+* `invalid`
+* Stateful firewall
+* Firewall rule order
+* Basic firewall policy
+* Management protection
+* LAN → WAN filtering
+* Firewall counter
+* Integrasi Firewall dengan NAT
+
+---
+
+# FINAL TOPOLOGY
+
+```text
+                 CHR-ISP-1
+                    │
+                 ether2
+                    │
+                    │ WAN
+                    │
+                 ether3
+               CHR-HQ-1
+              ┌─────┴─────┐
+           ether1        ether2
+        Management        LAN
+                            │
+                           PC1
+```
+
+---
+
+# FINAL INTERFACE MAPPING
+
+## CHR-ISP-1
+
+```text
+ether1 → Management
+ether2 → WAN
+```
+
+## CHR-HQ-1
+
+```text
+ether1 → Management
+ether2 → LAN
+ether3 → WAN
+```
+
+## PC1
+
+```text
+ether0 → CHR-HQ-1 ether2
+```
+
+**RouterOS/WinBox tetap menjadi source of truth untuk mapping interface.**
+
+---
+
+# FINAL IP ADDRESSING
+
+## CHR-ISP-1
+
+```text
+ether1 → 192.168.56.109/24
+ether2 → 192.168.100.1/24
+```
+
+## CHR-HQ-1
+
+```text
+ether1 → 192.168.56.108/24
+ether2 → 192.168.10.1/24
+ether3 → 192.168.100.254/24
+```
+
+`ether3` mendapatkan address melalui DHCP Client.
+
+## PC1
+
+```text
+IP      : 192.168.10.10/24
+Gateway : 192.168.10.1
+```
+
+---
+
+# FINAL ROUTING — CHR-HQ-1
+
+Connected routes:
+
+```text
+192.168.10.0/24  → ether2
+192.168.56.0/24  → ether1
+192.168.100.0/24 → ether3
+```
+
+Default route:
+
+```text
+0.0.0.0/0 → 192.168.100.1
+```
+
+Tidak ada static route khusus:
+
+```text
+8.8.8.1
+```
+
+Static route tersebut tetap tidak boleh dikembalikan hanya untuk testing.
+
+---
+
+# FINAL NAT — CHR-HQ-1
+
+Rule LAB-03 tetap dipertahankan:
+
+```text
+chain=srcnat
+action=masquerade
+out-interface=ether3
+```
+
+Contoh translation:
+
+```text
+192.168.10.10
+      ↓
+192.168.100.254
+```
+
+**Masquerade tidak berarti private IP selalu berubah menjadi public IP.**
+
+NAT tetap bekerja setelah firewall LAB-04 diterapkan.
+
+Verified NAT counter:
+
+```text
+40 packets → 45 packets
+```
+
+---
+
+# FINAL FIREWALL POLICY
+
+## INPUT
+
+```text
+#0 input
+connection-state=invalid
+action=drop
+
+#2 input
+connection-state=established,related
+action=accept
+
+#6 input
+connection-state=new
+src-address=192.168.56.0/24
+action=accept
+
+#7 input
+protocol=icmp
+src-address=192.168.10.0/24
+action=accept
+
+#8 input
+connection-state=new
+action=drop
+```
+
+## FORWARD
+
+```text
+#1 forward
+connection-state=invalid
+action=drop
+
+#3 forward
+connection-state=established,related
+action=accept
+
+#4 forward
+connection-state=new
+src-address=192.168.10.0/24
+out-interface=ether3
+action=accept
+
+#5 forward
+connection-state=new
+action=drop
+```
+
+Final ordering secara konsep:
+
+```text
+INVALID
+   ↓
+DROP
+
+ESTABLISHED / RELATED
+   ↓
+ACCEPT
+
+NEW
+   ↓
+specific policy
+   ↓
+ACCEPT / DROP
+```
+
+---
+
+# IMPORTANT FIREWALL CONCEPTS
+
+## INPUT
+
+Packet menuju router itu sendiri.
+
+Contoh:
+
+```text
+PC1
+192.168.10.10
+      ↓
+192.168.10.1
+HQ
+```
+
+---
+
+## FORWARD
+
+Packet melewati router.
+
+Contoh:
+
+```text
+PC1
+192.168.10.10
+      ↓
+HQ
+      ↓
+ISP
+192.168.100.1
+```
+
+---
+
+## OUTPUT
+
+Packet dibuat oleh router itu sendiri.
+
+Contoh:
+
+```text
+HQ
+192.168.100.254
+      ↓
+ISP
+192.168.100.1
+```
+
+---
+
+# CONNECTION TRACKING
+
+User memahami:
+
+```text
+NEW
+→ awal connection/flow
+
+ESTABLISHED
+→ bagian dari connection yang sudah dikenali
+
+RELATED
+→ connection yang berkaitan dengan connection lain
+
+INVALID
+→ packet yang tidak dapat dikaitkan secara valid
+  dengan connection tracking
+```
+
+Policy:
+
+```text
+invalid
+→ drop
+
+established,related
+→ accept
+
+new
+→ diproses berdasarkan policy
+```
+
+---
+
+# FIREWALL RULE ORDER
+
+Konsep yang harus dipertahankan:
+
+> Firewall diproses dari atas ke bawah.
+
+Bukan:
+
+> Nomor rule terkecil selalu menang.
+
+Rule hanya berhenti diproses ketika sebuah rule yang sesuai melakukan action seperti `accept` atau `drop`.
+
+Contoh:
+
+```text
+#0 established → ACCEPT
+#1 new         → DROP
+```
+
+Packet `established` match #0 dan berhenti di sana.
+
+---
+
+# VERIFIED FIREWALL COUNTERS
+
+Final validation:
+
+```text
+#0 input invalid drop              0
+#1 forward invalid drop            0
+
+#2 input established accept     7344
+#3 forward established accept     12
+#4 forward LAN→WAN new accept     12
+#5 forward new drop                 7
+
+#6 input management accept         52
+#7 input LAN ICMP accept             7
+#8 input new drop                   21
+```
+
+Interpretasi:
+
+* `invalid` belum ditemukan selama test.
+* Established/related traffic berhasil diterima.
+* LAN → WAN `NEW` berhasil diterima.
+* Traffic `NEW` forward yang tidak memenuhi policy berhasil di-drop.
+* Management network berhasil diterima.
+* ICMP LAN berhasil diterima.
+* Traffic `NEW` menuju router yang tidak diizinkan berhasil di-drop.
+
+---
+
+# VERIFIED CONNECTIVITY
+
+```text
+PC1 → 192.168.10.1
+PASS
+
+PC1 → 192.168.100.1
+PASS
+
+Management → 192.168.56.108
+PASS
+
+HQ → 192.168.100.1
+PASS
+```
+
+---
+
+# TROUBLESHOOTING EXPERIENCE
+
+LAB-04 mengalami masalah DHCP pada `ether3`.
+
+DHCP Client sempat:
+
+```text
+searching...
+```
+
+Walaupun interface:
+
+```text
+RUNNING
+```
+
+Setelah restart GNS3:
+
+```text
+DHCP Client
+→ bound
+→ 192.168.100.254/24
+```
+
+Lesson:
+
+```text
+RUNNING interface
+≠
+DHCP berhasil
+```
+
+Troubleshooting sequence yang harus dipertahankan:
+
+```text
+LINK
+ ↓
+INTERFACE
+ ↓
+IP
+ ↓
+ARP
+ ↓
+ROUTE
+ ↓
+FIREWALL
+ ↓
+NAT
+ ↓
+CONNECTION TRACKING
+```
+
+Restart GNS3 hanya dilakukan sebagai troubleshooting environment/state, bukan sebagai langkah pertama.
+
+---
+
+# BACKUP
+
+Final backup sudah diverifikasi:
+
+```text
+LAB-04.backup
+```
+
+Type:
+
+```text
+backup
+```
+
+Size:
+
+```text
+23.8 KiB
+```
+
+Backup tersedia di `/file`.
+
+---
+
+# ASSESSMENT-04
+
+```text
+Score : 79/100
+Status: PASS
+```
+
+## Strengths
+
+User sudah cukup kuat pada:
+
+```text
+Input vs Forward
+Firewall policy
+LAN → WAN
+Stateful firewall dasar
+Management protection
+Accept vs Drop
+Firewall counters
+Basic troubleshooting
+NAT + Firewall integration
+```
+
+## Weaknesses to Reinforce
+
+Masih perlu diperkuat:
+
+```text
+1. Source vs Destination
+2. Router IP vs PC IP
+3. Input vs Forward vs Output
+4. Rule order secara teknis
+5. Connection state secara lebih presisi
+6. Full packet flow
+7. NAT transformation dalam packet flow
+```
+
+Kesalahan penting pada assessment:
+
+* Menyebut `192.168.100.254` sebagai `10.254`.
+* Menjelaskan rule order seolah-olah nomor rule terkecil otomatis menang.
+* Packet flow PC1 → `192.168.100.1` masih mencampurkan `input` dan `forward`.
+
+---
+
+# CURRENT KNOWLEDGE BASELINE
+
+User sekarang memahami secara praktik:
+
+```text
+DHCP Server
+DHCP Client
+Dynamic IP
+Gateway
+Connected Route
+Default Route
+DNS dasar
+WAN
+NAT
+Masquerade
+NAT Counter
+Connection Tracking dasar
+Firewall
+Input
+Forward
+Output
+Accept
+Drop
+Log
+New
+Established
+Related
+Invalid
+Stateful Firewall
+Firewall Rule Order
+Basic Firewall Troubleshooting
+GNS3/VPCS state
+```
+
+---
+
+# MAIN CONCEPT TO CARRY INTO LAB-05
+
+Sebelum melanjutkan materi berikutnya, terus gunakan model:
+
+```text
+PACKET
+  ↓
+SOURCE
+  ↓
+DESTINATION
+  ↓
+ROUTING DECISION
+  ↓
+INPUT / FORWARD / OUTPUT
+  ↓
+CONNECTION STATE
+  ↓
+FIREWALL
+  ↓
+NAT bila relevan
+  ↓
+OUTGOING INTERFACE
+  ↓
+REPLY
+  ↓
+CONNECTION TRACKING
+  ↓
+REVERSE PROCESSING
+```
+
+Jangan menghafalkan packet flow sebagai satu urutan kaku. Gunakan model tersebut untuk **menganalisis kasus**.
+
+---
+
+# PROJECT STATUS
+
+```text
+LAB-01              ✅ PASS
+Assessment-01       ✅ 76/100
+
+LAB-02              ✅ PASS
+Assessment-02       ✅ 72/100
+
+LAB-03              ✅ PASS
+Assessment-03       ✅ 60/100
+
+LAB-04              ✅ PASS
+Assessment-04       ✅ 79/100
+
+LAB-05              ⏳ NEXT
+```
+
+---
+
+# NEXT CHAT — LAB-05
+
+Mentor berikutnya harus:
+
+1. Membaca handoff ini sebagai baseline.
+2. Tidak mengulang LAB-01 sampai LAB-04.
+3. Menggunakan konfigurasi final LAB-04 sebagai baseline.
+4. Menjelaskan **objective LAB-05 terlebih dahulu**.
+5. Menjelaskan topology/perubahan topology jika ada.
+6. Menjelaskan konsep baru sebelum konfigurasi.
+7. Memberikan konfigurasi bertahap.
+8. User melakukan konfigurasi sendiri.
+9. Tidak menganggap konfigurasi berhasil tanpa evidence.
+10. Melakukan validation setiap tahap.
+11. Memberikan troubleshooting scenario.
+12. Melakukan final verification.
+13. Meminta backup setelah LAB selesai.
+14. Membuat README.
+15. Membuat Result dan Learning Outcome.
+16. Membuat Assessment-05.
+17. Setelah Assessment-05 PASS, membuat handoff berikutnya.
+
+**LAB-05 harus dibangun di atas konfigurasi final LAB-04, bukan membuat lab baru dari nol.**
