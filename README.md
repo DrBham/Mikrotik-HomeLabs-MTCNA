@@ -1,65 +1,63 @@
-# MikroTik MTCNA Home Labs — Junior Network Engineer Journey
+<div align="center">
 
-> **Hands-on networking practice using MikroTik RouterOS, GNS3, and VirtualBox.**  
-> Dokumentasi pembelajaran MTCNA fundamentals melalui konfigurasi, pengujian, dan troubleshooting pada lingkungan jaringan virtual.
+# MikroTik MTCNA Home Labs
+
+**Six hands-on RouterOS labs covering MTCNA fundamentals, built and tested in GNS3**
+
+![RouterOS](https://img.shields.io/badge/MikroTik-RouterOS%20CHR-2563eb?style=flat-square)
+![GNS3](https://img.shields.io/badge/GNS3-Virtual%20Lab-0f766e?style=flat-square)
+![Labs](https://img.shields.io/badge/Labs-LAB--01%20to%20LAB--06-16a34a?style=flat-square)
+
+</div>
 
 ## Overview
 
-Repository ini berisi dokumentasi **enam home lab MikroTik** yang saya kerjakan untuk mengulang dan memperkuat konsep dasar **MikroTik Certified Network Associate (MTCNA)** serta membangun portofolio menuju peran **Junior Network Engineer**.
+This repository documents six MikroTik home labs that I built to revisit and strengthen the core topics of the **MikroTik Certified Network Associate (MTCNA)** course, and to build a portfolio toward a Junior Network Engineer role. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
 
-Saya menggunakan pendekatan **learn → configure → verify → troubleshoot → document**. Setiap lab mencatat tujuan, topologi, konfigurasi, alasan teknis, hasil pengujian, dan pelajaran yang saya dapatkan. README tiap lab juga berfungsi sebagai bahan belajar ulang.
-
-> **Scope:** Repository ini adalah *home lab* berbasis simulasi, bukan klaim implementasi produksi atau penguasaan seluruh silabus MTCNA.
+Each lab follows the same workflow: **learn → configure → verify → troubleshoot → document**. Lab write-ups record the goal, topology, configuration, test results, and lessons learned.
 
 ## Lab Environment
 
-| Tool | Function |
+| Tool | Role |
 |---|---|
-| **GNS3** | Mendesain topologi serta menghubungkan node virtual |
-| **MikroTik CHR / RouterOS** | Router untuk addressing, DHCP, NAT, firewall, dan routing |
-| **Oracle VirtualBox** | Mendukung virtualisasi dan jaringan host-only untuk management |
-| **WinBox** | Administrasi dan inspeksi RouterOS |
-| **VPCS** | Simulasi client untuk pengujian IP connectivity |
+| **GNS3** | Topology design and node connections |
+| **MikroTik CHR (RouterOS)** | Routers for addressing, DHCP, NAT, firewall, and routing |
+| **Oracle VirtualBox** | Virtualization and host-only management network |
+| **WinBox** | RouterOS administration |
+| **VPCS** | Simulated clients for connectivity tests |
 
-## Learning Roadmap
+## Labs
 
-| Lab | Topic | Skills demonstrated | Status |
+| Lab | Topic | Skills | Status |
 |---|---|---|---|
-| [LAB-01 — RouterOS Foundation](LAB-01%20RouterOS%20Foundation/) | Interface & IPv4 addressing | LAN setup, subnet, connected route, ICMP | Completed |
-| [LAB-02 — WAN & DHCP Client](LAB-02%20WAN%20%26%20DHCP%20Client/) | Simulated ISP & dynamic WAN | DHCP Client, WAN lease, default route, DNS simulation | Completed |
-| [LAB-03 — NAT & Internet Access](LAB-03%20NAT%20%26%20Internet%20Access/) | Source NAT | Masquerade, NAT counter, connection tracking | Completed* |
-| [LAB-04 — Firewall Fundamental](LAB-04%20Firewall%20Fundamental/) | Stateful filtering | Input/forward/output, connection states, rule order | Completed |
-| [LAB-05 — DHCP Server & LAN Client Management](LAB-05%20DHCP%20Server%20%26%20LAN%20Client%20Management/) | Dynamic LAN addressing | DHCP pool, network, lease, DORA, troubleshooting | Completed |
-| [LAB-06 — Routing Fundamental](LAB-06%20Routing%20Fundamental/) | HQ–BRANCH integration | Static routes, firewall forward policy, NAT exemption, bidirectional testing | Technical PASS |
+| [LAB-01 — RouterOS Foundation](LAB-01%20RouterOS%20Foundation/) | Interfaces and IPv4 addressing | LAN setup, subnetting, connected routes, ICMP | Completed |
+| [LAB-02 — WAN & DHCP Client](LAB-02%20WAN%20%26%20DHCP%20Client/) | Simulated ISP and dynamic WAN | DHCP client, WAN lease, default route, DNS simulation | Completed |
+| [LAB-03 — NAT & Internet Access](LAB-03%20NAT%20%26%20Internet%20Access/) | Source NAT | Masquerade, NAT counters, connection tracking | Completed¹ |
+| [LAB-04 — Firewall Fundamental](LAB-04%20Firewall%20Fundamental/) | Stateful filtering | Input/forward/output chains, connection states, rule order | Completed |
+| [LAB-05 — DHCP Server & LAN Client Management](LAB-05%20DHCP%20Server%20%26%20LAN%20Client%20Management/) | Dynamic LAN addressing | DHCP pool, network, leases, DORA, troubleshooting | Completed |
+| [LAB-06 — Routing Fundamental](LAB-06%20Routing%20Fundamental/) | HQ–Branch integration | Static routes, forward policy, NAT exemption, two-way testing | Technical PASS² |
 
-*LAB-03 memverifikasi **NAT dan konektivitas menuju ISP simulasi**, bukan akses Internet publik. ISP pada topologi ini tidak memiliki upstream Internet sungguhan.*
+¹ LAB-03 verifies NAT and connectivity to the **simulated ISP**, not access to the public Internet.
+² Two-way connectivity was validated; LAB-06 was done in guided mode, so no formal final assessment was held.
 
-**Next milestone:** Final Project — Small Office Network Integration, sebagai implementasi terintegrasi dari materi yang telah dipelajari.
+## Topology
 
-## Network Evolution
-
-### Foundation: LAB-01 hingga LAB-05
+**LAB-01 to LAB-05:** one HQ router with a LAN and a WAN uplink to a simulated ISP.
 
 ```text
-Laptop / WinBox (Host-Only management)
+Laptop / WinBox (host-only management)
             |
          CHR-HQ-1
          /      \
-   LAN ether2   WAN ether3 (DHCP Client)
+   LAN ether2   WAN ether3 (DHCP client)
        |               |
       PC1         CHR-ISP-1
  192.168.10.0/24  192.168.100.0/24
 ```
 
-Perkembangan konfigurasi dari lab awal hingga LAB-05 mencakup:
+Across these labs, HQ gains a static LAN, a DHCP client on the WAN, source NAT (masquerade), a basic stateful firewall, and finally a DHCP server for the LAN.
 
-- IP statis PC1 untuk pengujian LAN awal.
-- DHCP Client WAN HQ untuk memperoleh IP dinamis dan default route.
-- Source NAT masquerade pada interface WAN HQ.
-- Basic stateful firewall pada HQ.
-- DHCP Server LAN HQ; PC1 kemudian memperoleh IP melalui DHCP.
-
-### Multi-site routing: LAB-06
+**LAB-06:** a Branch router joins the same transit network, and both LANs are connected with static routes.
 
 ```text
                   CHR-ISP-1
@@ -67,9 +65,8 @@ Perkembangan konfigurasi dari lab awal hingga LAB-05 mencakup:
                        |
                      Switch
                     /      \
-                   /        \
              CHR-HQ-1      CHR-BRANCH-1
-           WAN .254*       WAN .253
+             WAN .254      WAN .253
                |              |
             HQ LAN         BRANCH LAN
         192.168.10.0/24  192.168.20.0/24
@@ -77,66 +74,38 @@ Perkembangan konfigurasi dari lab awal hingga LAB-05 mencakup:
               PC1            PC2
 ```
 
-Kedua router berbagi subnet transit `192.168.100.0/24` pada switch Layer 2. Karena itu, komunikasi HQ–BRANCH tidak harus melewati router ISP. HQ menggunakan WAN DHCP dengan alamat `.254` **yang teramati pada pengujian**, sehingga alamat itu tidak dijamin tetap sama setelah lease berubah.
+## Results
 
-Pada LAB-06, kedua LAN dihubungkan menggunakan static route dua arah, disertai penyesuaian firewall `forward` dan NAT exemption di HQ. **Ping PC1 → PC2 dan PC2 → PC1 berhasil, masing-masing 10/10 balasan** pada pengujian akhir. LAB-06 dinyatakan *Technical PASS*; assessment akhir formal dan kelengkapan backup/export tidak boleh diasumsikan selesai tanpa evidence.
+| Test | Result |
+|---|---|
+| PC1 → PC2 (HQ to Branch, LAB-06) | 10/10 ICMP replies in the final test |
+| PC2 → PC1 (Branch to HQ, LAB-06) | 10/10 ICMP replies in the final test |
+| PC1 DHCP lease from HQ (LAB-05) | `192.168.10.100/24`, gateway and DNS `192.168.10.1` |
+| Source NAT on HQ WAN (LAB-03) | PC1 reaches the simulated ISP through masquerade |
 
-## How to Read This Repository
+## Repository Structure
 
-Setiap folder LAB-01 hingga LAB-06 memiliki `README.md` yang menjelaskan tujuan, topologi, konfigurasi, hasil pengujian, troubleshooting, dan pembelajaran dari lab tersebut.
-
-File pendukung **diletakkan langsung di dalam folder masing-masing lab**, tanpa pemisahan folder `screenshots/`, `evidence/`, atau `configs/`. Isinya dapat berupa:
-
-- **Screenshot** topologi GNS3, IP addressing, routing, DHCP, firewall, NAT, dan hasil ping.
-- **Export RouterOS (`.rsc`)**, jika tersedia, untuk membaca kembali konfigurasi.
-- **Backup RouterOS (`.backup`)**, jika tersedia, untuk kebutuhan pemulihan pada lingkungan yang kompatibel.
-- **Handoff note** atau catatan pendukung yang merekam kelanjutan pekerjaan.
-
-Contoh susunan file dalam salah satu folder lab:
+Each lab folder holds the evidence for that lab: a write-up (`README.md`, or a handoff note for LAB-03), screenshots, and RouterOS `.rsc` exports. For example:
 
 ```text
 LAB-04 Firewall Fundamental/
-├── README.md
-├── Topology.png
-├── IP Address.png
-├── Routing Table.png
-├── Firewall Filter.png
-├── Firewall Filter Stats.png
-├── Firewall NAT Stats.png
-├── PC1 Connectivity Validation.png
-├── LAB-04.rsc
-├── LAB-04.backup
-└── Handoff.md
+├── README.md        # Goal, configuration, tests, lessons learned
+├── Topology.png     # GNS3 topology
+├── *.png            # Screenshots of addressing, routing, firewall, and tests
+├── Handoff.txt      # Notes carried into the next lab
+└── LAB-04.rsc       # RouterOS configuration export
 ```
 
-> Contoh di atas menggambarkan **cara penyimpanan file**, bukan daftar file yang wajib ada pada setiap lab. Nama dan jumlah berkas dapat berbeda. Mulai dari LAB-01 untuk mengikuti pembelajaran berurutan, atau langsung buka LAB-06 untuk melihat implementasi routing HQ–BRANCH.
+Start with LAB-01 to follow the labs in order, or open LAB-06 for the complete two-site setup.
 
-**Catatan verifikasi:** Screenshot dan konfigurasi hanya dianggap sebagai evidence jika memang tersedia. Command contoh di README tidak selalu berarti command tersebut dijalankan persis sama dalam praktik asli.
+## Scope
 
-## Important Technical Boundaries
+- **Simulated ISP:** the ISP router has no real upstream, so NAT and default-route tests prove connectivity to the simulated ISP only, not to the public Internet.
+- **Dynamic WAN address:** HQ receives `.254` by DHCP. The Branch static route points to that address and must be updated if the lease changes.
+- **Published files:** configurations are shared as `.rsc` exports. Binary `.backup` files and credentials are not included.
 
-1. **Simulated ISP ≠ public Internet.** Ping ke ISP virtual, NAT counter, dan default route tidak otomatis membuktikan koneksi Internet publik.
-2. **Dynamic WAN IP may change.** Static route di BRANCH yang menunjuk IP WAN HQ harus ditinjau apabila lease HQ berubah.
-3. **Ping success has limits.** Hasil ICMP yang berhasil menunjukkan connectivity pada pengujian tersebut, bukan jaminan seluruh layanan berjalan.
-4. **Security first.** Binary RouterOS `.backup` tidak disarankan untuk repository publik. Periksa dan sanitasi `.rsc`, screenshot, kredensial, dan detail lingkungan sebelum mengunggahnya.
+This is a simulation-based home lab. It is not a production deployment and does not claim coverage of the full MTCNA syllabus.
 
-## Final Project — Small Office Network Integration
+## Final Project
 
-Tahap berikutnya adalah **Final Project: Small Office Network Integration**, yaitu penerapan terintegrasi berdasarkan pembelajaran LAB-01–LAB-06. Proyek akhir berfokus pada desain HQ–BRANCH, addressing, DHCP, routing, NAT, firewall, verifikasi, troubleshooting yang terdokumentasi, dan prosedur backup.
-
-Final Project akan ditempatkan pada **repository tersendiri** agar dokumentasi proses belajar di sini tetap terpisah dari deliverable portofolio akhir. Tautan repository Final Project akan ditambahkan **setelah repository tersebut dibuat**.
-
-## Portfolio Purpose
-
-Repository ini dibuat sebagai:
-
-- Catatan belajar yang bisa saya kunjungi kembali untuk mengingat konsep MTCNA.
-- Bukti praktik konfigurasi dan verifikasi RouterOS pada lingkungan virtual.
-- Dokumentasi perkembangan troubleshooting dan cara berpikir berdasarkan evidence.
-- Materi pendukung portofolio GitHub, CV, dan LinkedIn untuk posisi Junior Network Engineer.
-
----
-
-**Current status:** LAB-01–LAB-06 documented · Final Project — Small Office Network Integration is the next milestone.
-
-*Created as a personal networking learning journey. Feedback and technical corrections are welcome.*
+The topics from these labs are combined in the final project, published in its own repository: **[Small Office Multi-Site Network Deployment](https://github.com/DrBham/Small-Office-Multi-Site-Network-Deployment)**.
