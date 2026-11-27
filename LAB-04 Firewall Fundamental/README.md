@@ -1,154 +1,103 @@
-# LAB-04 — Firewall Fundamentals
+# LAB-04 — Firewall Fundamental
 
-**MikroTik MTCNA Home Lab · Junior Network Engineer Portfolio**  
-**Status:** PASS · **Fokus:** Stateful firewall, chain `input`/`forward`/`output`, rule order, NAT integration
+**Status:** Completed · **Platform:** GNS3, MikroTik CHR (RouterOS 7.21.5), VPCS, WinBox
+**Skills:** stateful filtering, `input`/`forward`/`output` chains, connection states, rule order
 
-> **Catatan dokumentasi:** README ini disusun dari catatan praktik asli. Command verifikasi merupakan referensi untuk mengulang pemeriksaan; tidak semua command dinyatakan telah dijalankan ketika lab berlangsung. Nama interface dan nilai IP mengikuti evidence pada lab ini, bukan template untuk topologi lain.
+## Overview
 
+Until LAB-03 the HQ router accepted everything. LAB-04 adds a basic **stateful firewall**: replies to existing connections pass, the LAN may start connections toward the WAN, the management network may reach the router, and every other new connection is dropped. LAN, WAN, management, and NAT from the earlier labs keep working.
 
-## Daftar Isi
+![LAB-04 GNS3 topology: CHR-ISP-1, CHR-HQ-1 and PC1](<Topology.png>)
 
-1. [Ringkasan](#1-ringkasan)
-2. [Tujuan](#2-tujuan)
-3. [Topologi dan IP](#3-topologi-dan-ip)
-4. [Teori firewall dan packet flow](#4-teori-firewall-dan-packet-flow)
-5. [Kebijakan final](#5-kebijakan-final)
-6. [Verifikasi](#6-verifikasi)
-7. [Troubleshooting](#7-troubleshooting)
-8. [Backup dan evidence](#8-backup-dan-evidence)
-9. [Learning outcome](#9-learning-outcome)
+## Addressing
 
-## 1. Ringkasan
-
-LAB04 menerapkan **basic stateful firewall** pada CHR-HQ-1. Kebijakan ini membatasi koneksi baru ke router dan koneksi yang diteruskan, namun tetap mengizinkan LAN menuju WAN serta balasan untuk koneksi yang sudah ada. Validasi menunjukkan layanan management, LAN, WAN, dan NAT LAB03 tetap berjalan.
-
-## 2. Tujuan
-
-- Membedakan chain `input`, `forward`, dan `output`.
-- Memahami action `accept`, `drop`, `log` dan urutan rule.
-- Memahami connection state `new`, `established`, `related`, `invalid`.
-- Menerapkan allow rule untuk traffic yang memang diperlukan dan drop untuk traffic baru lainnya.
-- Memastikan firewall baru tidak mengganggu akses management dan NAT.
-
-## 3. Topologi dan IP
-
-```text
-Management PC ── host-only ── ether1 [CHR-HQ-1]
-PC1 ── ether2 (LAN) ──────── [CHR-HQ-1] ether3 (WAN) ── CHR-ISP-1
-```
-
-| Perangkat | Interface | IP Address | Fungsi |
+| Device | Interface | Address | Role |
 |---|---|---|---|
-| CHR-ISP-1 | ether1 | `192.168.56.109/24` | Management |
-| CHR-ISP-1 | ether2 | `192.168.100.1/24` | ISP virtual |
-| CHR-HQ-1 | ether1 | `192.168.56.108/24` | Management |
-| CHR-HQ-1 | ether2 | `192.168.10.1/24` | LAN gateway |
-| CHR-HQ-1 | ether3 | `192.168.100.254/24` | WAN |
-| PC1 | Ethernet | `192.168.10.10/24` | GW `192.168.10.1` |
+| CHR-ISP-1 | `ether2` | `192.168.100.1/24` | ISP side of the WAN |
+| CHR-HQ-1 | `ether1` | `192.168.56.108/24` | Management |
+| CHR-HQ-1 | `ether2` | `192.168.10.1/24` | LAN gateway |
+| CHR-HQ-1 | `ether3` | `192.168.100.254/24` (DHCP lease) | WAN |
+| PC1 | Ethernet | `192.168.10.10/24`, gateway `192.168.10.1` | LAN client |
 
-## 4. Teori firewall dan packet flow
+## Which chain sees which packet
 
-| Chain | Traffic | Contoh pada lab |
+| Chain | Traffic | Example in this lab |
 |---|---|---|
-| `input` | Paket **menuju** router HQ | PC1 ping `192.168.10.1` |
-| `forward` | Paket **melewati** HQ | PC1 ping ISP `192.168.100.1` |
-| `output` | Paket **dibuat** oleh HQ | HQ ping ISP `192.168.100.1` |
+| `input` | To the router itself | PC1 pings `192.168.10.1` |
+| `forward` | Through the router | PC1 pings the ISP `192.168.100.1` |
+| `output` | From the router itself | HQ pings the ISP |
 
-Connection state membantu membuat kebijakan **stateful**:
+Rules are read top to bottom inside each chain. An `input` rule never filters `forward` traffic.
 
-- `new`: koneksi/traffic baru yang belum menjadi bagian koneksi established.
-- `established`: traffic pada koneksi yang sudah teridentifikasi.
-- `related`: koneksi yang terkait dengan koneksi lain.
-- `invalid`: traffic yang tidak dapat dilacak secara valid oleh connection tracking.
+## Policy
 
-> **Perhatikan:** Rule diproses dari atas ke bawah **di dalam chain yang sesuai**. Rule `input` tidak otomatis menyaring traffic `forward`. Action `log` mencatat paket lalu pemrosesan dapat berlanjut; ia bukan pengganti `drop`.
-
-## 5. Kebijakan final
-
-Urutan berikut disalin dari README sumber sebagai **urutan konfigurasi yang terdokumentasi**, bukan command siap tempel:
-
-| No. | Chain | Match utama | Action | Alasan |
-|---:|---|---|---|---|
-| 0 | input | `connection-state=invalid` | drop | Abaikan invalid ke router |
-| 1 | forward | `connection-state=invalid` | drop | Abaikan invalid melewati router |
-| 2 | input | `established,related` | accept | Izinkan traffic balasan ke router |
-| 3 | forward | `established,related` | accept | Izinkan return traffic lintas router |
-| 4 | forward | `src-address=192.168.10.0/24`, `out-interface=ether3`, `new` | accept | LAN → WAN |
-| 5 | forward | `new` | drop | Tolak new forward lain |
-| 6 | input | `src-address=192.168.56.0/24`, `new` | accept | Management network |
-| 7 | input | `src-address=192.168.10.0/24`, `protocol=icmp` | accept | Ping LAN ke router |
-| 8 | input | `new` | drop | Tolak new input lain |
-
-**Catatan keamanan:** Rule management berdasarkan `src-address` saja mencerminkan lab aslinya; ini bukan template keamanan siap produksi. Pada implementasi nyata perlu meninjau interface sumber, layanan management yang diperlukan, dan akses admin. Jika firewall yang sudah aktif hendak diubah, gunakan WinBox Safe Mode atau mekanisme rollback untuk mengurangi risiko terputus dari router.
-
-**Command inspeksi:**
+From [LAB-04.rsc](LAB-04.rsc), in order:
 
 ```routeros
-/ip firewall filter print detail
-/ip firewall filter print stats
-/ip firewall nat print stats
-/ip firewall connection print
+/ip firewall filter
+add action=drop chain=input connection-state=invalid
+add action=drop chain=forward connection-state=invalid
+add action=accept chain=input connection-state=established,related
+add action=accept chain=forward connection-state=established,related
+add action=accept chain=forward connection-state=new out-interface=ether3 src-address=192.168.10.0/24
+add action=drop chain=forward connection-state=new
+add action=accept chain=input connection-state=new src-address=192.168.56.0/24
+add action=accept chain=input protocol=icmp src-address=192.168.10.0/24
+add action=drop chain=input connection-state=new
 ```
 
-## 6. Verifikasi
-
-| Pengujian dari dokumentasi | Hasil |
+| Rule | Why |
 |---|---|
-| PC1 → gateway HQ `192.168.10.1` | PASS |
-| PC1 → ISP `192.168.100.1` | PASS |
-| Management `192.168.56.106 → 192.168.56.108` | PASS |
-| HQ → ISP `192.168.100.1` | PASS |
-| Counter filter `accept` dan `drop` | Traffic cocok dengan rule |
-| NAT counter `40 → 45 packets` | Masquerade tetap digunakan |
+| Drop `invalid` | Packets connection tracking cannot place |
+| Accept `established,related` early | Replies pass without opening new holes, and most packets match here first |
+| Accept new LAN → WAN | The only forwarded traffic allowed to start a connection |
+| Accept new from `192.168.56.0/24` | Keeps WinBox management working |
+| Accept ICMP from the LAN | PC1 can ping its gateway |
+| Drop other `new` | Default deny for both chains |
 
-**Interpretasi:** Pengujian mengonfirmasi traffic yang diperlukan tetap diteruskan. Counter menunjukkan aktivitas rule, tetapi untuk membuktikan sebuah kebijakan `drop` secara spesifik, cocokkan juga dengan pengujian traffic yang ditolak dan posisi rule.
+![Firewall filter rules on CHR-HQ-1](<Firewall Filter.png>)
 
-## 7. Troubleshooting
+> [!WARNING]
+> Test firewall changes in WinBox **Safe Mode**. If a rule locks you out, closing the session rolls the change back.
 
-**Gejala:** DHCP Client WAN `ether3` HQ menunjukkan `searching...`, walaupun DHCP Server ISP aktif. Interface terlihat `RUNNING`, sementara lease ISP kosong.
+## Verification
 
-**Tindakan tercatat:** Setelah restart GNS3, DHCP Client kembali `bound` dengan `192.168.100.254/24`.
+| Test | Result |
+|---|---|
+| PC1 → LAN gateway `192.168.10.1` | Replies received |
+| PC1 → ISP `192.168.100.1` | Replies received |
+| Management host `192.168.56.106` → HQ `192.168.56.108` | WinBox session works |
+| HQ → ISP `192.168.100.1` | Replies received |
+| Filter counters | Accept and drop rules both counted packets |
+| NAT counter | Rose from 40 to 45 packets during the tests |
 
-**Makna diagnosis:** Status link `RUNNING` tidak berarti DHCP berhasil memperoleh lease. Catatan sumber menunjukkan koneksi pulih setelah restart, tetapi **akar penyebab definitif belum dibuktikan**. Karena itu pemeriksaan tetap dimulai dari status link, interface, DHCP, addressing, route, lalu firewall/NAT.
+| Filter counters | NAT counters |
+|---|---|
+| ![Firewall filter rules with packet counters](<Firewall Filter Stats.png>) | ![Masquerade rule counter after tests](<Firewall NAT Stats.png>) |
 
-```text
-LINK → INTERFACE → DHCP LEASE → IP → ARP → ROUTING → FIREWALL → NAT
-```
+![PC1 connectivity tests after the firewall was applied](<PC1 Connectivity Validation.png>)
 
-## 8. Backup dan evidence
+## Troubleshooting
 
-Backup sumber: `LAB-04.backup`, terverifikasi melalui `/file print`, ukuran tercatat **23.8 KiB**. Export `.rsc` tidak disebutkan sebagai file yang telah diverifikasi di sumber—jangan klaim tersedia tanpa pengecekan.
+**HQ WAN DHCP client stuck on `searching...`.** `ether3` showed `RUNNING`, the ISP DHCP server was enabled, and the ISP lease list was empty. After GNS3 was restarted the client returned to `bound` with `192.168.100.254/24`. The exact root cause was not isolated. Lesson: `RUNNING` means the link is up, not that DHCP succeeded.
 
-Screenshot yang dicatat:
+Check order used: link → interface → DHCP lease → IP → ARP → routing → firewall → NAT.
 
-```text
-evidence/
-├── 01-topology.png
-├── 02-ip-address.png
-├── 03-routing.png
-├── 04-firewall-rules.png
-├── 05-firewall-counters.png
-├── 06-nat-counters.png
-├── 07-connectivity-test.png
-└── 08-backup.png
-```
+## Known issue
 
-## 9. Learning outcome
+The final `drop new input` rule also blocks DNS queries from the LAN. This was found after the lab; the fix is in [LAB-06 fixes](../LAB-06%20Routing%20Fundamental/fixes/02-HQ-fix.rsc).
 
-Saya memahami mengapa `input` berbeda dari `forward`, bagaimana connection tracking memungkinkan traffic balasan tanpa membuka seluruh koneksi baru, dan mengapa rule order harus diperiksa sebelum menyimpulkan apakah sebuah paket akan diterima atau dibuang. Saya juga belajar bahwa NAT dan firewall adalah fungsi berbeda yang harus diverifikasi bersama.
+## Lessons learned
 
-**Pertanyaan review mandiri:** Apa yang terjadi jika drop `new` forward ditempatkan sebelum allow LAN→WAN? Mengapa ping yang dijalankan dari router tidak diuji melalui `forward`? Mengapa `established,related` biasanya diterima lebih awal? Apa batas interpretasi firewall counter?
+- `input` protects the router; `forward` protects the networks behind it.
+- Rule order decides the result. Moving "drop new forward" above "accept LAN → WAN" would cut the LAN off.
+- Counters show that a rule matched, not that the policy is right. Pair them with a test that should be blocked.
 
-**Kesimpulan:** LAB-04 **PASS** berdasarkan evidence LAN, WAN, management, rule counter dan NAT yang tetap bekerja.
+## Files
 
----
+| File | Content |
+|---|---|
+| [LAB-04.rsc](LAB-04.rsc) | CHR-HQ-1 export |
+| `*.png` | Topology, addressing, routing, firewall, NAT, test, and backup screenshots |
 
-## Catatan Audit dan Kesinambungan (Oktober 2026)
-
-> **Catatan kesinambungan project (25 Oktober 2026):** Roadmap yang benar-benar dijalankan adalah LAB01 RouterOS Foundation, LAB02 WAN/DHCP Client, LAB03 NAT, LAB04 Firewall, LAB05 DHCP Server LAN, dan LAB06 Static Routing HQ–BRANCH. LAB07 Network Troubleshooting **dihentikan sebelum selesai** dan LAB08 Backup/Restore **dibatalkan** atas keputusan pemilik project. Tahap berikutnya adalah **Final Project — Small Office Network Integration**. Perubahan ini tidak mengubah hasil historis lab ini.
-
-### Evolusi firewall pada LAB06
-
-Rule yang tercantum di sini merupakan **baseline LAB04**. Ketika BRANCH (`192.168.20.0/24`) ditambahkan pada LAB06, HQ memerlukan rule `forward` yang menerima koneksi baru dari BRANCH menuju LAN HQ, ditempatkan **sebelum** rule umum `drop` untuk koneksi `new`. Jadi rule list LAB04 memang dapat berbeda dari firewall pada topologi final LAB06.
-
-Daftar filter di sini mengatur traffic berdasarkan chain. Urutan nomor global tidak berarti paket melintasi semua chain: paket `input` tidak diproses sebagai `forward`.
+Previous: [LAB-03](../LAB-03%20NAT%20%26%20Internet%20Access/) · Next: [LAB-05 — DHCP Server](../LAB-05%20DHCP%20Server%20%26%20LAN%20Client%20Management/)

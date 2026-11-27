@@ -1,0 +1,2 @@
+# RouterOS binary backups can hold credentials; keep them private
+*.backup

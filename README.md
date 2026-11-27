@@ -25,6 +25,7 @@ Each lab follows the same workflow: **learn → configure → verify → trouble
 | **Oracle VirtualBox** | Virtualization and host-only management network |
 | **WinBox** | RouterOS administration |
 | **VPCS** | Simulated clients for connectivity tests |
+| **MikroTik hAP lite (RB941-2nD)** | Real hardware for the planned wireless lab |
 
 ## Labs
 
@@ -35,10 +36,24 @@ Each lab follows the same workflow: **learn → configure → verify → trouble
 | [LAB-03 — NAT & Internet Access](LAB-03%20NAT%20%26%20Internet%20Access/) | Source NAT | Masquerade, NAT counters, connection tracking | Completed¹ |
 | [LAB-04 — Firewall Fundamental](LAB-04%20Firewall%20Fundamental/) | Stateful filtering | Input/forward/output chains, connection states, rule order | Completed |
 | [LAB-05 — DHCP Server & LAN Client Management](LAB-05%20DHCP%20Server%20%26%20LAN%20Client%20Management/) | Dynamic LAN addressing | DHCP pool, network, leases, DORA, troubleshooting | Completed |
-| [LAB-06 — Routing Fundamental](LAB-06%20Routing%20Fundamental/) | HQ–Branch integration | Static routes, forward policy, NAT exemption, two-way testing | Technical PASS² |
+| [LAB-06 — Routing Fundamental](LAB-06%20Routing%20Fundamental/) | HQ–Branch integration | Static routes, forward policy, NAT exemption, two-way testing | Completed² |
 
 ¹ LAB-03 verifies NAT and connectivity to the **simulated ISP**, not access to the public Internet.
-² Two-way connectivity was validated; LAB-06 was done in guided mode, so no formal final assessment was held.
+² Two-way connectivity was validated. A post-lab review found gaps (DNS, transit addressing, BRANCH firewall, hardening); fix scripts are in [LAB-06 fixes](LAB-06%20Routing%20Fundamental/fixes/) and are not yet tested.
+
+### Planned labs
+
+These step-by-step guides fill the remaining MTCNA topics. Each one is written but **not yet performed**; its status changes to Completed once screenshots and an export are added.
+
+| Lab | Topic | Skills | Status |
+|---|---|---|---|
+| [LAB-07 — Bridging and ARP](LAB-07%20Bridging%20and%20ARP/) | Switched LAN | Bridge ports, MAC learning, ARP `reply-only`, static ARP | Planned |
+| [LAB-08 — RouterOS Management and Backup](LAB-08%20RouterOS%20Management%20and%20Backup/) | Device management | Users and groups, services, NTP, upgrade, scheduled backup, restore | Planned |
+| [LAB-09 — QoS and Bandwidth Management](LAB-09%20QoS%20and%20Bandwidth%20Management/) | Traffic shaping | Simple queues, burst, PCQ | Planned |
+| [LAB-10 — Advanced Firewall and Port Forwarding](LAB-10%20Advanced%20Firewall%20and%20Port%20Forwarding/) | Firewall | Address lists, dst-nat, logging, FastTrack | Planned |
+| [LAB-11 — PPPoE and Tunnels](LAB-11%20PPPoE%20and%20Tunnels/) | Access and VPN | PPPoE server/client, L2TP/IPsec site-to-site, route failover | Planned |
+| [LAB-12 — Network Tools and Troubleshooting](LAB-12%20Network%20Tools%20and%20Troubleshooting/) | Operations | Netwatch, Torch, sniffer, logging, SNMP, break-fix scenarios | Planned |
+| [LAB-13 — Wireless with hAP lite](LAB-13%20Wireless%20with%20hAP%20lite/) | Wireless (real hardware) | AP and station modes, WPA2, access list, registration table | Planned |
 
 ## Topology
 
@@ -85,23 +100,25 @@ Across these labs, HQ gains a static LAN, a DHCP client on the WAN, source NAT (
 
 ## Repository Structure
 
-Each lab folder holds the evidence for that lab: a write-up (`README.md`, or a handoff note for LAB-03), screenshots, and RouterOS `.rsc` exports. For example:
+Each lab folder holds the evidence for that lab: a write-up, screenshots, and RouterOS `.rsc` exports. For example:
 
 ```text
 LAB-04 Firewall Fundamental/
 ├── README.md        # Goal, configuration, tests, lessons learned
 ├── Topology.png     # GNS3 topology
 ├── *.png            # Screenshots of addressing, routing, firewall, and tests
-├── Handoff.txt      # Notes carried into the next lab
 └── LAB-04.rsc       # RouterOS configuration export
 ```
+
+LAB-06 also has a `fixes/` folder with post-lab fix and hardening scripts.
 
 Start with LAB-01 to follow the labs in order, or open LAB-06 for the complete two-site setup.
 
 ## Scope
 
 - **Simulated ISP:** the ISP router has no real upstream, so NAT and default-route tests prove connectivity to the simulated ISP only, not to the public Internet.
-- **Dynamic WAN address:** HQ receives `.254` by DHCP. The Branch static route points to that address and must be updated if the lease changes.
+- **Dynamic WAN address:** HQ receives `.254` by DHCP. The Branch static route points to that address; [01-ISP-fix.rsc](LAB-06%20Routing%20Fundamental/fixes/01-ISP-fix.rsc) reserves it on the ISP.
+- **Not covered yet:** bridging, wireless, queues (QoS), tunnels/PPPoE, and RouterOS tools such as Netwatch and Torch. Guides for these are in the planned labs above.
 - **Published files:** configurations are shared as `.rsc` exports. Binary `.backup` files and credentials are not included.
 
 This is a simulation-based home lab. It is not a production deployment and does not claim coverage of the full MTCNA syllabus.
