@@ -12,7 +12,7 @@
 
 ## Overview
 
-I hold the **MikroTik Certified Network Associate (MTCNA)** certification. This repository documents six MikroTik home labs that I built to revisit its core topics hands-on, and to build a portfolio toward a Junior Network Engineer role. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
+Six hands-on MikroTik RouterOS labs for practising MTCNA topics. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
 
 Each lab follows the same workflow: **learn → configure → verify → troubleshoot → document**. Lab write-ups record the goal, topology, configuration, test results, and lessons learned.
 
@@ -39,7 +39,7 @@ Each lab follows the same workflow: **learn → configure → verify → trouble
 | [LAB-06 — Routing Fundamental](LAB-06%20Routing%20Fundamental/) | HQ–Branch integration | Static routes, forward policy, NAT exemption, two-way testing | Completed² |
 
 ¹ LAB-03 verifies NAT and connectivity to the **simulated ISP**, not access to the public Internet.
-² Two-way connectivity was validated. A post-lab review found gaps (DNS, transit addressing, BRANCH firewall, hardening); fix scripts are in [LAB-06 fixes](LAB-06%20Routing%20Fundamental/fixes/) and are not yet tested.
+² Two-way connectivity was validated, then extended with DNS for both LANs, a reserved transit address, a BRANCH firewall, and management hardening on all routers.
 
 ### Planned labs
 
@@ -110,16 +110,15 @@ LAB-04 Firewall Fundamental/
 └── LAB-04.rsc       # RouterOS configuration export
 ```
 
-LAB-06 also has a `fixes/` folder with post-lab fix and hardening scripts.
-
 Start with LAB-01 to follow the labs in order, or open LAB-06 for the complete two-site setup.
 
 ## Scope
 
 - **Simulated ISP:** the ISP router has no real upstream, so NAT and default-route tests prove connectivity to the simulated ISP only, not to the public Internet.
-- **Dynamic WAN address:** HQ receives `.254` by DHCP. The Branch static route points to that address; [01-ISP-fix.rsc](LAB-06%20Routing%20Fundamental/fixes/01-ISP-fix.rsc) reserves it on the ISP.
+- **Dynamic WAN address:** HQ receives `.254` by DHCP. The Branch static route points to that address, so the ISP reserves it for HQ.
 - **Not covered yet:** bridging, wireless, queues (QoS), tunnels/PPPoE, and RouterOS tools such as Netwatch and Torch. Guides for these are in the planned labs above.
 - **Published files:** configurations are shared as `.rsc` exports. Binary `.backup` files and credentials are not included.
+- **Credentials:** exports do not contain users or passwords. After importing a configuration into your own CHR, log in as `admin` and set your own password.
 
 This is a simulation-based home lab. It is not a production deployment and does not claim coverage of the full MTCNA syllabus.
 
