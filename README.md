@@ -12,7 +12,7 @@
 
 ## Overview
 
-This repository documents six MikroTik home labs that I built to revisit and strengthen the core topics of the **MikroTik Certified Network Associate (MTCNA)** course, and to build a portfolio toward a Junior Network Engineer role. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
+I hold the **MikroTik Certified Network Associate (MTCNA)** certification. This repository documents six MikroTik home labs that I built to revisit its core topics hands-on, and to build a portfolio toward a Junior Network Engineer role. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
 
 Each lab follows the same workflow: **learn → configure → verify → troubleshoot → document**. Lab write-ups record the goal, topology, configuration, test results, and lessons learned.
 
@@ -122,6 +122,10 @@ Start with LAB-01 to follow the labs in order, or open LAB-06 for the complete t
 - **Published files:** configurations are shared as `.rsc` exports. Binary `.backup` files and credentials are not included.
 
 This is a simulation-based home lab. It is not a production deployment and does not claim coverage of the full MTCNA syllabus.
+
+## Disclaimer
+
+This is an independent study project. It is not affiliated with or endorsed by MikroTik, and it contains no official MikroTik training material. All topologies, configurations, and screenshots were made by me. MikroTik, RouterOS, and MTCNA are trademarks of MikroTik.
 
 ## Final Project
 
