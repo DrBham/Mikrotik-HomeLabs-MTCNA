@@ -74,7 +74,7 @@ Expected: ICMP Echo Request with source `192.168.10.100` (not `192.168.100.254`)
 ```routeros
 /system logging action add name=disklog target=disk disk-file-name=lab12-log disk-lines-per-file=1000
 /system logging add topics=firewall action=disklog
-/ip firewall filter set [find chain=input action=drop connection-state=new] log=yes log-prefix="DROP-IN"
+/ip firewall filter set [find comment="Drop other new input"] log=yes log-prefix="DROP-IN"
 ```
 
 Test: from ISP run `/ping 192.168.100.254 count=3` (ICMP from the WAN is not allowed on HQ input).
@@ -106,7 +106,7 @@ Inject the faults below **one at a time, in random order** (ask someone else to 
 |---|---|---|---|
 | 1 | Wrong DHCP gateway option | HQ: `/ip dhcp-server network set [find address="192.168.10.0/24"] gateway=192.168.10.254` | PC1 renews (`ip dhcp`), pings `192.168.10.1` fine, cannot reach PC2 or ISP |
 | 2 | Static route disabled | HQ: `/ip route disable [find dst-address="192.168.20.0/24"]` | PC1 → PC2 fails; HQ sends BRANCH traffic to the ISP |
-| 3 | Allow rule below the drop | HQ: `/ip firewall filter move [find chain=forward action=drop connection-state=new] destination=[find comment="LAB06-Allow-Branch-to-HQ"]` (puts the drop above the allow rule) | PC1 → PC2 works, PC2 → PC1 times out |
+| 3 | Allow rule below the drop | HQ: `/ip firewall filter move [find comment="Drop other new forward"] destination=[find comment="LAB06-Allow-Branch-to-HQ"]` (puts the drop above the allow rule) | PC1 → PC2 works, PC2 → PC1 times out |
 | 4 | NAT exemption disabled | HQ: `/ip firewall nat disable [find comment="LAB06-No-NAT-HQ-to-Branch"]` | Ping still works, but the sniffer shows source `192.168.100.254` |
 | 5 | DHCP pool too small | HQ: `/ip pool set [find name=LAN-POOL] ranges=192.168.10.10-192.168.10.10` then release PC1's lease | PC1 stays on `0.0.0.0` or keeps an old lease |
 | 6 | DHCP client on the wrong port | HQ: `/ip dhcp-client set [find interface=ether3] interface=ether4` | HQ loses its WAN address and default route; BRANCH loses its next hop `.254` |

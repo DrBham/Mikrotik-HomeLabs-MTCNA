@@ -27,43 +27,96 @@ LAB-02 adds a second router, **CHR-ISP-1**, that plays the role of an Internet p
 
 ## Configuration
 
-**CHR-ISP-1** — DHCP server for the WAN segment ([LAB-02-ISP.rsc](LAB-02-ISP.rsc)):
+### 1. Interfaces
+
+Both routers list five Ethernet ports. Only the running ones (`R`) are cabled in GNS3: `ether1` and `ether2` on the ISP, `ether1` to `ether3` on HQ.
+
+On each router:
+
+```routeros
+/interface print
+```
+
+| ISP interfaces | HQ interfaces |
+|---|---|
+| ![ISP interface list](<Interface ISP.png>) | ![HQ interface list](<Interface HQ.png>) |
+
+### 2. ISP: addresses and DHCP server
+
+The ISP holds `192.168.100.1/24` on `ether2` and runs `ISP-DHCP` there with the pool `ISP-POOL` (`.10`–`.254`) and a 30-minute lease. The DHCP network hands out `192.168.100.1` as both gateway and DNS server.
+
+On CHR-ISP-1:
 
 ```routeros
 /ip address add address=192.168.100.1/24 interface=ether2
 /ip pool add name=ISP-POOL ranges=192.168.100.10-192.168.100.254
-/ip dhcp-server add address-pool=ISP-POOL interface=ether2 name=ISP-DHCP
-/ip dhcp-server network add address=192.168.100.0/24 dns-server=192.168.100.1 gateway=192.168.100.1
+/ip dhcp-server add name=ISP-DHCP interface=ether2 address-pool=ISP-POOL lease-time=30m
+/ip dhcp-server network add address=192.168.100.0/24 gateway=192.168.100.1 dns-server=192.168.100.1
 /ip dns set allow-remote-requests=yes
 /system identity set name=ISP
+
+# Check
+/ip address print
+/ip dhcp-server print
+/ip dhcp-server network print
 ```
 
-**CHR-HQ-1** — DHCP client on the WAN port ([LAB-02.rsc](LAB-02.rsc)):
+| ISP addresses | ISP DHCP server | ISP DHCP network |
+|---|---|---|
+| ![ISP IP addresses](<IP Address ISP.png>) | ![ISP DHCP server ISP-DHCP on ether2](<DHCP-Server ISP.png>) | ![ISP DHCP network with gateway and DNS 192.168.100.1](<DHCP-Server Network ISP.png>) |
+
+### 3. HQ: DHCP client on the WAN
+
+A DHCP client on `ether3` receives `192.168.100.254/24`. With the defaults `add-default-route=yes` and `use-peer-dns=yes`, it also installs a default route to `192.168.100.1` (flag `DAd`) and uses the ISP as DNS server.
+
+On CHR-HQ-1:
 
 ```routeros
 /ip dhcp-client add interface=ether3
+
+# Check
+/ip dhcp-client print detail
+/ip address print
+/ip route print
+/ip dns print
 ```
 
-With the RouterOS defaults (`add-default-route=yes`, `use-peer-dns=yes`) the client installs a default route to `192.168.100.1` and uses the ISP as its DNS server.
-
-| ISP DHCP server | ISP DHCP network |
+| HQ DHCP client | HQ addresses |
 |---|---|
-| ![ISP DHCP server ISP-DHCP on ether2](<DHCP-Server ISP.png>) | ![ISP DHCP network with gateway and DNS 192.168.100.1](<DHCP-Server Network ISP.png>) |
-| **HQ DHCP client** | **HQ routing table** |
-| ![HQ DHCP client bound with 192.168.100.254/24](<DHCP-Client Detail HQ.png>) | ![HQ routing table with dynamic default route](<Routing Table HQ.png>) |
+| ![HQ DHCP client bound with 192.168.100.254/24](<DHCP-Client Detail HQ.png>) | ![HQ IP addresses with dynamic WAN address](<IP Address HQ.png>) |
+| **HQ routing table** | **HQ DNS settings** |
+| ![HQ routing table with dynamic default route](<Routing Table HQ.png>) | ![HQ DNS with dynamic server 192.168.100.1](<DNS HQ.png>) |
+
+| Route on HQ | Source | Purpose |
+|---|---|---|
+| `192.168.10.0/24` via `ether2` | Connected | LAN |
+| `192.168.100.0/24` via `ether3` | Connected (from the DHCP address) | WAN segment |
+| `0.0.0.0/0` via `192.168.100.1` | DHCP client | Everything else |
 
 ## Verification
 
 | Test | Result |
 |---|---|
 | HQ DHCP client on `ether3` | `bound`, `192.168.100.254/24`, gateway and DNS `192.168.100.1` |
-| HQ → ISP gateway `192.168.100.1` | 0% packet loss |
-| HQ → simulated external host `8.8.8.1` | Replies received |
-| HQ resolves test record `lab02.test` → `8.8.8.1` | Resolved |
+| HQ → ISP gateway `192.168.100.1` | 6/6 replies, 0% loss |
+| HQ → simulated external host `8.8.8.1` | 4/4 replies |
+| HQ resolves test record `lab02.test` → `8.8.8.1` | Resolved, 7/7 replies |
 | HQ resolves `google.com` | `resolve failed` (expected: no real upstream) |
 | PC1 → LAN gateway `192.168.10.1` | Replies received |
 
 `8.8.8.1` and `lab02.test` existed only on the simulated ISP during testing; they are not in the final exports.
+
+On CHR-HQ-1 and PC1:
+
+```routeros
+/ping 192.168.100.1
+/ping 8.8.8.1
+/ping lab02.test
+```
+
+```text
+PC1> ping 192.168.10.1
+```
 
 | HQ → ISP gateway | HQ → simulated external host |
 |---|---|
@@ -71,17 +124,24 @@ With the RouterOS defaults (`add-default-route=yes`, `use-peer-dns=yes`) the cli
 | **DNS test** | **PC1 → LAN gateway** |
 | ![DNS resolution of lab02.test](<DNS Verification.png>) | ![PC1 ping to 192.168.10.1](<PC1 Ping Gateway.png>) |
 
-## Routes on HQ
+## Backup and export
 
-| Route | Source | Purpose |
-|---|---|---|
-| `192.168.10.0/24` via `ether2` | Connected | LAN |
-| `192.168.100.0/24` via `ether3` | Connected (from the DHCP address) | WAN segment |
-| `0.0.0.0/0` via `192.168.100.1` | DHCP client | Everything else |
+```routeros
+# HQ
+/export file=LAB-02
+/system backup save name=LAB-02
+# ISP
+/export file=LAB-02-ISP
+/system backup save name=LAB-02-ISP
+```
+
+| HQ | ISP |
+|---|---|
+| ![HQ export and backup](<HQ Backup & Export.png>) | ![ISP export and backup](<ISP Backup & Export.png>) |
 
 ## Troubleshooting
 
-**Wrong interface.** GNS3 adapter numbers did not match RouterOS interface names, so the first DHCP client attempt sat on the wrong port. The fix was to map each cable with `/interface print` and `/ip address print` first, then put the DHCP client on `ether3`.
+**Wrong interface.** GNS3 adapter numbers did not match RouterOS interface names, so the first DHCP client attempt sat on the wrong port. The solution was to map each cable with the interface and address lists first, then put the DHCP client on `ether3`.
 
 Check order used: interface → IP → DHCP lease → route → ping by IP → DNS.
 
@@ -97,6 +157,6 @@ Check order used: interface → IP → DHCP lease → route → ping by IP → D
 |---|---|
 | [LAB-02.rsc](LAB-02.rsc) | CHR-HQ-1 export |
 | [LAB-02-ISP.rsc](LAB-02-ISP.rsc) | CHR-ISP-1 export |
-| `*.png` | Topology, interfaces, addressing, DHCP, routing, and test screenshots |
+| `*.png` | Topology, interfaces, addressing, DHCP, routing, DNS, and test screenshots |
 
 Previous: [LAB-01](../LAB-01%20RouterOS%20Foundation/) · Next: [LAB-03 — NAT & Internet Access](../LAB-03%20NAT%20%26%20Internet%20Access/)

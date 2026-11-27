@@ -10,13 +10,13 @@ The first lab builds the smallest useful network: one MikroTik CHR router and on
 ![LAB-01 GNS3 topology: CHR-HQ-1 linked to PC1](<Topology.png>)
 
 > [!NOTE]
-> GNS3 labels the router port "Ether 1", but RouterOS names the same link `ether2`. GNS3 adapter numbers do not always match RouterOS interface names, so check `/interface print` before you configure.
+> GNS3 labels the router port "Ether 1", but RouterOS names the same link `ether2`. GNS3 adapter numbers do not always match RouterOS interface names, so RouterOS is the source of truth.
 
 ## Addressing
 
 | Device | Interface | Address | Role |
 |---|---|---|---|
-| CHR (`MTCNA-SOHO-R1`) | `ether1` | `192.168.56.108/24` | Management (VirtualBox host-only) |
+| CHR (`MTCNA-SOHO-R1`) | `ether1` | `192.168.56.108/24` (DHCP from VirtualBox) | Management |
 | CHR (`MTCNA-SOHO-R1`) | `ether2` | `192.168.10.1/24` | LAN gateway |
 | PC1 (VPCS) | Ethernet | `192.168.10.10/24`, gateway `192.168.10.1` | LAN client |
 
@@ -24,33 +24,58 @@ The first lab builds the smallest useful network: one MikroTik CHR router and on
 
 ## Configuration
 
-Router configuration from the export [LAB-01.rsc](LAB-01.rsc):
+### 1. Router identity
+
+The router is named `MTCNA-SOHO-R1`, so it is easy to recognise once more routers join the topology.
 
 ```routeros
-/ip address add address=192.168.10.1/24 comment=LAN interface=ether2
-/ip dhcp-client add interface=ether1
 /system identity set name=MTCNA-SOHO-R1
+/system identity print
 ```
 
-PC1 (VPCS console):
+![System identity set to MTCNA-SOHO-R1](<System Identity.png>)
 
-```text
-ip 192.168.10.10/24 192.168.10.1
+### 2. LAN address
+
+`192.168.10.1/24` is set on `ether2` with the comment `LAN`. The management address on `ether1` comes from the VirtualBox host-only DHCP server (flag `D`).
+
+```routeros
+/ip address add address=192.168.10.1/24 interface=ether2 comment=LAN
+/ip address print
 ```
+
+![IP address list with 192.168.10.1/24 on ether2](<IP Address.png>)
+
+### 3. Connected routes
+
+As soon as an address is active on an interface, RouterOS adds a connected route (`DAc`) for its subnet. No static route is needed to reach PC1.
+
+```routeros
+/ip route print
+```
+
+![Routing table with connected routes for the LAN and management subnets](<IP Route.png>)
 
 ## Verification
 
-| Test | Command | Result |
-|---|---|---|
-| PC1 → router | `ping 192.168.10.1` (VPCS) | Replies received |
-| Router → PC1 | `/ping 192.168.10.10` | `sent=3 received=3 packet-loss=0%` |
-| Connected route | `/ip route print` | `192.168.10.0/24` via `ether2`, flag `DAc` |
-
-| Router identity | IP addresses |
+| Test | Result |
 |---|---|
-| ![System identity set to MTCNA-SOHO-R1](<System Identity.png>) | ![IP address list with 192.168.10.1/24 on ether2](<IP Address.png>) |
-| **Routing table** | **Ping from PC1** |
-| ![Routing table with connected route 192.168.10.0/24](<IP Route.png>) | ![VPCS ping from PC1 to 192.168.10.1](<Ping From PC1.png>) |
+| PC1 → router `192.168.10.1` | Replies received |
+| Router → PC1 `192.168.10.10` | 3/3 replies, 0% loss |
+| Connected route | `192.168.10.0/24` via `ether2`, flag `DAc` |
+
+PC1 (VPCS) and the router:
+
+```text
+PC1> ip 192.168.10.10/24 192.168.10.1
+PC1> ping 192.168.10.1
+```
+
+```routeros
+/ping 192.168.10.10 count=3
+```
+
+![VPCS ping from PC1 to 192.168.10.1](<Ping From PC1.png>)
 
 ## Why PC1 reaches the router without a route
 
@@ -63,12 +88,17 @@ The default gateway matters only when the destination is outside the local subne
 
 ## Backup vs export
 
+```routeros
+/export file=LAB-01
+/system backup save name=LAB-01
+```
+
 ![Terminal output of export and system backup](<Backup & Export.png>)
 
-| Format | Command | Use |
-|---|---|---|
-| `.rsc` export | `/export file=LAB-01` | Readable text; safe to publish after review |
-| `.backup` | `/system backup save name=LAB-01` | Binary restore on the same device; can hold credentials, kept private |
+| Format | Use |
+|---|---|
+| `.rsc` export | Readable text; safe to publish after review |
+| `.backup` | Binary restore on the same device; can hold credentials, kept private |
 
 ## Lessons learned
 

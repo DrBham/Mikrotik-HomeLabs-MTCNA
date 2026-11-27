@@ -53,7 +53,7 @@ Keep the ether3 DHCP address (BRANCH routes to `.254`) but stop it from installi
     comment="Masquerade PPPoE"
 /ip firewall filter add chain=forward action=accept connection-state=new \
     src-address=192.168.10.0/24 out-interface=pppoe-out1 comment="LAN to PPPoE" \
-    place-before=[find chain=forward action=drop connection-state=new]
+    place-before=[find comment="Drop other new forward"]
 ```
 
 ### 4. Verify Part A
@@ -87,10 +87,10 @@ MTU is 1480, not 1500, because PPPoE adds an 8-byte header to every frame.
     use-ipsec=required ipsec-secret=<IPSEC_PSK>
 /ip firewall filter add chain=input action=accept protocol=udp dst-port=500,1701,4500 \
     src-address=192.168.100.253 comment="L2TP/IPsec from BRANCH" \
-    place-before=[find chain=input action=drop connection-state=new]
+    place-before=[find comment="Drop other new input"]
 /ip firewall filter add chain=input action=accept protocol=ipsec-esp \
     src-address=192.168.100.253 comment="ESP from BRANCH" \
-    place-before=[find chain=input action=drop connection-state=new]
+    place-before=[find comment="Drop other new input"]
 ```
 
 ### 6. L2TP client on CHR-BRANCH-1

@@ -41,7 +41,7 @@ Expected: the management rule now shows `src-address-list=MGMT-HOSTS`, and WinBo
 ```routeros
 /ip firewall filter add chain=forward action=drop src-address-list=BLOCKED \
     comment="Drop blocked hosts" \
-    place-before=[find chain=forward action=accept connection-state=new out-interface=ether3]
+    place-before=[find comment="LAN to WAN"]
 /ip firewall address-list add list=BLOCKED address=192.168.10.100 timeout=10m comment="PC1 test"
 ```
 
@@ -74,7 +74,7 @@ Then the NAT rule and the matching forward accept:
     dst-port=2222 to-addresses=<CLIENT_IP> to-ports=22 comment="SSH to CLIENT-CHR"
 /ip firewall filter add chain=forward action=accept connection-state=new \
     connection-nat-state=dstnat in-interface=ether3 comment="Allow port forwards" \
-    place-before=[find chain=forward action=drop connection-state=new]
+    place-before=[find comment="Drop other new forward"]
 ```
 
 Test from CHR-ISP-1:
@@ -88,7 +88,7 @@ Expected: the login prompt of `CLIENT-CHR` (check the identity in the prompt), n
 ### 4. Log dropped input
 
 ```routeros
-/ip firewall filter set [find chain=input action=drop connection-state=new] \
+/ip firewall filter set [find comment="Drop other new input"] \
     log=yes log-prefix="DROP-IN"
 ```
 
@@ -105,7 +105,7 @@ Expected: three entries with `in:ether3`, source `192.168.100.1`, protocol ICMP.
 ```routeros
 /ip firewall filter add chain=forward action=fasttrack-connection \
     connection-state=established,related comment="FastTrack" \
-    place-before=[find chain=forward action=accept connection-state=established,related]
+    place-before=[find comment="Accept established forward"]
 ```
 
 Repeat the LAB-09 bandwidth test from `CLIENT-CHR` to the ISP, then check:

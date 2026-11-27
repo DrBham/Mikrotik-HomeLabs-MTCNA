@@ -6,7 +6,7 @@
 
 ## Goal
 
-Turn two HQ ports into one switched LAN with a **bridge**, then control which hosts may talk to the router with **ARP `reply-only`**. Builds on the LAB-06 topology (and the LAB-06 fixes, if applied).
+Turn two HQ ports into one switched LAN with a **bridge**, then control which hosts may talk to the router with **ARP `reply-only`**. Builds on the final LAB-06 configuration.
 
 ## Topology change
 
@@ -36,7 +36,7 @@ Add **PC3** (VPCS) to HQ `ether4`. PC1 stays on `ether2`. Both ports join `bridg
 /ip dhcp-server set [find name=DHCP-LAN] interface=bridge-lan
 ```
 
-If the LAB-06 HQ fix is applied, its DNS rules name `ether2`. Move them to the bridge:
+The LAB-06 DNS rules on HQ name `ether2`. Move them to the bridge:
 
 ```routeros
 /ip firewall filter set [find in-interface=ether2] in-interface=bridge-lan

@@ -19,6 +19,15 @@ Until LAB-03 the HQ router accepted everything. LAB-04 adds a basic **stateful f
 | CHR-HQ-1 | `ether3` | `192.168.100.254/24` (DHCP lease) | WAN |
 | PC1 | Ethernet | `192.168.10.10/24`, gateway `192.168.10.1` | LAN client |
 
+```routeros
+/ip address print
+/ip route print
+```
+
+| HQ addresses | HQ routes |
+|---|---|
+| ![HQ IP addresses](<IP Address.png>) | ![HQ routing table](<Routing Table.png>) |
+
 ## Which chain sees which packet
 
 | Chain | Traffic | Example in this lab |
@@ -31,51 +40,70 @@ Rules are read top to bottom inside each chain. An `input` rule never filters `f
 
 ## Policy
 
-From [LAB-04.rsc](LAB-04.rsc), in order:
-
 ```routeros
 /ip firewall filter
-add action=drop chain=input connection-state=invalid
-add action=drop chain=forward connection-state=invalid
-add action=accept chain=input connection-state=established,related
-add action=accept chain=forward connection-state=established,related
-add action=accept chain=forward connection-state=new out-interface=ether3 src-address=192.168.10.0/24
-add action=drop chain=forward connection-state=new
-add action=accept chain=input connection-state=new src-address=192.168.56.0/24
-add action=accept chain=input protocol=icmp src-address=192.168.10.0/24
-add action=drop chain=input connection-state=new
+add chain=input action=drop connection-state=invalid
+add chain=forward action=drop connection-state=invalid
+add chain=input action=accept connection-state=established,related
+add chain=forward action=accept connection-state=established,related
+add chain=forward action=accept connection-state=new src-address=192.168.10.0/24 out-interface=ether3
+add chain=forward action=drop connection-state=new
+add chain=input action=accept connection-state=new src-address=192.168.56.0/24
+add chain=input action=accept protocol=icmp src-address=192.168.10.0/24
+add chain=input action=drop connection-state=new
+print
 ```
-
-| Rule | Why |
-|---|---|
-| Drop `invalid` | Packets connection tracking cannot place |
-| Accept `established,related` early | Replies pass without opening new holes, and most packets match here first |
-| Accept new LAN → WAN | The only forwarded traffic allowed to start a connection |
-| Accept new from `192.168.56.0/24` | Keeps WinBox management working |
-| Accept ICMP from the LAN | PC1 can ping its gateway |
-| Drop other `new` | Default deny for both chains |
 
 ![Firewall filter rules on CHR-HQ-1](<Firewall Filter.png>)
 
+| # | Rule | Why |
+|---|---|---|
+| 0–1 | Drop `invalid` (input and forward) | Packets connection tracking cannot place |
+| 2–3 | Accept `established,related` early | Replies pass without opening new holes, and most packets match here first |
+| 4 | Accept new forward from `192.168.10.0/24` out `ether3` | The only forwarded traffic allowed to start a connection |
+| 5 | Drop other new forward | Default deny for traffic through the router |
+| 6 | Accept new input from `192.168.56.0/24` | Keeps WinBox management working |
+| 7 | Accept ICMP from the LAN | PC1 can ping its gateway |
+| 8 | Drop other new input | Default deny for traffic to the router |
+
 > [!WARNING]
-> Test firewall changes in WinBox **Safe Mode**. If a rule locks you out, closing the session rolls the change back.
+> Change firewall rules in **Safe Mode** (`Ctrl+X` in the terminal, or the Safe Mode button in WinBox). If a rule locks you out, RouterOS rolls the change back.
 
 ## Verification
 
 | Test | Result |
 |---|---|
 | PC1 → LAN gateway `192.168.10.1` | Replies received |
-| PC1 → ISP `192.168.100.1` | Replies received |
+| PC1 → ISP `192.168.100.1` | 5/5 replies |
 | Management host `192.168.56.106` → HQ `192.168.56.108` | WinBox session works |
 | HQ → ISP `192.168.100.1` | Replies received |
-| Filter counters | Accept and drop rules both counted packets |
+| Filter counters | Accept and drop rules both counted packets (forward drop 7, input drop 35) |
 | NAT counter | Rose from 40 to 45 packets during the tests |
+
+```routeros
+/ip firewall filter print stats
+/ip firewall nat print stats
+```
 
 | Filter counters | NAT counters |
 |---|---|
 | ![Firewall filter rules with packet counters](<Firewall Filter Stats.png>) | ![Masquerade rule counter after tests](<Firewall NAT Stats.png>) |
 
+```text
+PC1> ping 192.168.100.1
+PC1> ping 192.168.10.1
+```
+
 ![PC1 connectivity tests after the firewall was applied](<PC1 Connectivity Validation.png>)
+
+## Backup and export
+
+```routeros
+/system backup save name=LAB-04
+/export file=LAB-04
+```
+
+![HQ backup and export](<HQ Backup & Export.png>)
 
 ## Troubleshooting
 
@@ -85,7 +113,7 @@ Check order used: link → interface → DHCP lease → IP → ARP → routing �
 
 ## Known issue
 
-The final `drop new input` rule also blocks DNS queries from the LAN. This was found after the lab; the fix is in [LAB-06 fixes](../LAB-06%20Routing%20Fundamental/fixes/02-HQ-fix.rsc).
+The final `drop new input` rule also blocks DNS queries from the LAN. It was found later and resolved in [LAB-06, DNS for LAN clients](../LAB-06%20Routing%20Fundamental/#4-dns-for-lan-clients).
 
 ## Lessons learned
 

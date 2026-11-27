@@ -35,7 +35,7 @@ Expected: `admin` shows flag `X`. Log in as `noc` and try `/system identity set 
 
 ### 2. Service hardening
 
-Apply [04-hardening.rsc](../LAB-06%20Routing%20Fundamental/fixes/04-hardening.rsc) on each router (WinBox on `ether1`, Safe Mode on), then check:
+Service hardening was applied to all routers in [LAB-06, management hardening](../LAB-06%20Routing%20Fundamental/#6-management-hardening-all-three-routers). Check that it is still in place:
 
 ```routeros
 /ip service print
