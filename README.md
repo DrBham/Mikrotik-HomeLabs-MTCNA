@@ -2,17 +2,18 @@
 
 # MikroTik MTCNA Home Labs
 
-**Six hands-on RouterOS labs covering MTCNA fundamentals, built and tested in GNS3**
+**Hands-on RouterOS labs covering MTCNA topics, built in GNS3 and on a hAP lite**
 
 ![RouterOS](https://img.shields.io/badge/MikroTik-RouterOS%20CHR-2563eb?style=flat-square)
 ![GNS3](https://img.shields.io/badge/GNS3-Virtual%20Lab-0f766e?style=flat-square)
-![Labs](https://img.shields.io/badge/Labs-LAB--01%20to%20LAB--06-16a34a?style=flat-square)
+![Completed](https://img.shields.io/badge/Completed-LAB--01%20to%20LAB--06-16a34a?style=flat-square)
+![Planned](https://img.shields.io/badge/Planned-LAB--07%20to%20LAB--13-ca8a04?style=flat-square)
 
 </div>
 
 ## Overview
 
-Six hands-on MikroTik RouterOS labs for practising MTCNA topics. The labs grow one network step by step, from a single router with one LAN to two sites linked by static routing.
+Thirteen hands-on MikroTik RouterOS labs for practising MTCNA topics. LAB-01 to LAB-06 are completed: they grow one network step by step, from a single router with one LAN to two sites linked by static routing. LAB-07 to LAB-13 are step-by-step guides for the remaining topics (bridging, management and backup, QoS, advanced firewall, PPPoE and tunnels, tools, and wireless) and are being worked through one by one.
 
 Each lab follows the same workflow: **learn → configure → verify → troubleshoot → document**. Lab write-ups record the goal, topology, configuration, test results, and lessons learned.
 
